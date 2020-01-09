@@ -1,12 +1,10 @@
 package main
 
 import (
-	"testing"
-
 	. "github.com/kettek/gobl/gobl"
 )
 
-func TestBasic(t *testing.T) {
+func main() {
 	/*task := gobl.Task("Test")
 	task.Watch <- "testdir/**"
 	task.Exec <- "go build client"
@@ -15,15 +13,15 @@ func TestBasic(t *testing.T) {
 	}
 	task.Run()*/
 
-	task := Task("Test")
+	task := Task("watch")
 	task <- Watch("testdir/")
-	task <- Run("Test 2")
+	task <- RunTask("build")
 	/*task <- gobl.Exec("go build client")
 	task <- gobl.Catch(func(err error) error {
 		return nil
 	})*/
 
-	task2 := Task("Test 2")
+	task2 := Task("build")
 	task2 <- Exec("go build client")
 
 	Go()

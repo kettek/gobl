@@ -1,6 +1,9 @@
 package gobl
 
-import "log"
+import (
+	"fmt"
+	"os"
+)
 
 var goblTasks = make(map[string]GoblTask)
 
@@ -17,7 +20,7 @@ type GoblStep interface {
 type GoblWatchStep struct {
 	Path string
 }
-type GoblRunStep struct {
+type GoblRunTaskStep struct {
 	TaskName string
 }
 type GoblExecStep struct {
@@ -40,8 +43,8 @@ func Watch(path string) GoblStep {
 	}
 }
 
-func Run(taskName string) GoblStep {
-	return GoblRunStep{
+func RunTask(taskName string) GoblStep {
+	return GoblRunTaskStep{
 		TaskName: taskName,
 	}
 }
@@ -52,28 +55,40 @@ func Exec(arg string) GoblExecStep {
 	}
 }
 
-func Go() {
-	for _, v := range goblTasks {
-		RunTask(v)
-		return
+func printInfo() {
+	fmt.Printf("Available Tasks (run with \"%s %s\")", os.Args[0], "MyTask")
+	for k, _ := range goblTasks {
+		fmt.Printf("\t%s\n", k)
 	}
 }
 
-func RunTask(g GoblTask) error {
+func Go() {
+	if len(os.Args) < 2 {
+		printInfo()
+		return
+	}
+	if task, ok := goblTasks[os.Args[1]]; ok {
+		runTask(task)
+		return
+	}
+	fmt.Println("No such task exists.")
+}
+
+func runTask(g GoblTask) error {
 	for len(g.channel) > 0 {
 		select {
 		case t := <-g.channel:
 			switch t := t.(type) {
 			case GoblWatchStep:
 				// Add to our watchers!
-				g.steps = append(g.steps, t)
-				log.Printf("Add watch %s\n", t.Path)
+				//g.steps = append(g.steps, t)
+				fmt.Printf("Add watch %s\n", t.Path)
 			case GoblExecStep:
 				g.steps = append(g.steps, t)
-				log.Printf("Exec %+v\n", t.Args)
-			case GoblRunStep:
+				fmt.Printf("Exec %+v\n", t.Args)
+			case GoblRunTaskStep:
 				g.steps = append(g.steps, t)
-				log.Printf("Run %s\n", t.TaskName)
+				fmt.Printf("Add Run %s\n", t.TaskName)
 			}
 		}
 	}
@@ -81,19 +96,17 @@ func RunTask(g GoblTask) error {
 	// IF we have watchers, then we'll spawn a go coroutine here!
 	for _, step := range g.steps {
 		switch step := step.(type) {
-		case GoblWatchStep:
-			log.Println("Watch")
 		case GoblExecStep:
-			log.Println("Exec")
-		case GoblRunStep:
+			fmt.Println("Exec")
+		case GoblRunTaskStep:
 			run, ok := goblTasks[step.TaskName]
 			if ok {
-				err := RunTask(run)
+				err := runTask(run)
 				if err != nil {
-					log.Fatal(err)
+					fmt.Println(err)
 				}
 			}
-			log.Println("Run")
+			fmt.Println("Ran subtask")
 		}
 	}
 

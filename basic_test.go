@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/kettek/gobl/gobl"
+	. "github.com/kettek/gobl/gobl"
 )
 
 func TestBasic(t *testing.T) {
@@ -15,17 +15,17 @@ func TestBasic(t *testing.T) {
 	}
 	task.Run()*/
 
-	task := gobl.Task("Test")
-	task <- gobl.Watch("testdir/")
-	task <- gobl.Run("Test 2")
+	task := Task("Test")
+	task <- Watch("testdir/")
+	task <- Run("Test 2")
 	/*task <- gobl.Exec("go build client")
 	task <- gobl.Catch(func(err error) error {
 		return nil
 	})*/
 
-	task2 := gobl.Task("Test 2")
-	task2 <- gobl.Exec("go build client")
+	task2 := Task("Test 2")
+	task2 <- Exec("go build client")
 
-	gobl.Go()
+	Go()
 	//gobl.RunTask(task)
 }

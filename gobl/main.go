@@ -60,8 +60,12 @@ func Go() {
 		return
 	}
 	if goblResult := <-RunTask(os.Args[1]); goblResult.Error != nil {
-		fmt.Println(goblResult.Result)
-		fmt.Println(goblResult.Error)
+		if goblResult.Result != nil {
+			fmt.Println(goblResult.Result)
+		}
+		if goblResult.Error != nil {
+			fmt.Println(goblResult.Error)
+		}
 	}
 }
 
@@ -69,7 +73,9 @@ func RunTask(taskName string) (errChan chan GoblResult) {
 	g, ok := goblTasks[taskName]
 	if !ok {
 		errChan = make(chan GoblResult)
-		errChan <- GoblResult{nil, fmt.Errorf("task \"%s\" does not exist", taskName)}
+		go func() {
+			errChan <- GoblResult{nil, fmt.Errorf("task \"%s\" does not exist", taskName)}
+		}()
 	} else {
 		g.compile()
 		errChan = g.run()

@@ -18,7 +18,7 @@ func main() {
 	})
 
 	task2 := Task("build")
-	task2 <- Exec("ls", "build client")
+	task2 <- Exec("ls-oops")
 	task2 <- Catch(func(err error) error {
 		fmt.Println(err)
 		fmt.Println("going to continue on our merry way!")

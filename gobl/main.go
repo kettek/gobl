@@ -2,37 +2,17 @@ package gobl
 
 import (
 	"fmt"
+	"github.com/radovskyb/watcher"
 	"os"
 )
 
-var goblTasks = make(map[string]GoblTask)
-
-type GoblTask struct {
-	Name     string
-	watching []string
-	running  []GoblTask
-	steps    []GoblStep
-	channel  chan GoblStep
-}
-
-type GoblStep interface {
-}
-type GoblWatchStep struct {
-	Path string
-}
-type GoblRunTaskStep struct {
-	TaskName string
-}
-type GoblExecStep struct {
-	Args []string
-}
-type GoblCanKill struct {
-}
-
 func Task(name string) chan GoblStep {
-	goblTasks[name] = GoblTask{
-		Name:    name,
-		channel: make(chan GoblStep, 99),
+	goblTasks[name] = &GoblTask{
+		Name:        name,
+		channel:     make(chan GoblStep, 99),
+		stopChannel: make(chan error),
+		runChannel:  make(chan bool),
+		watcher:     watcher.New(),
 	}
 	return goblTasks[name].channel
 }
@@ -43,20 +23,32 @@ func Watch(path string) GoblStep {
 	}
 }
 
-func RunTask(taskName string) GoblStep {
+func Catch(f func(error) error) GoblStep {
+	return GoblCatchTaskStep{
+		Func: f,
+	}
+}
+
+func Result(f func(interface{})) GoblStep {
+	return GoblResultTaskStep{
+		Func: f,
+	}
+}
+
+func Run(taskName string) GoblStep {
 	return GoblRunTaskStep{
 		TaskName: taskName,
 	}
 }
 
-func Exec(arg string) GoblExecStep {
+func Exec(args ...string) GoblExecStep {
 	return GoblExecStep{
-		Args: []string{arg},
+		Args: args,
 	}
 }
 
 func printInfo() {
-	fmt.Printf("Available Tasks (run with \"%s %s\")", os.Args[0], "MyTask")
+	fmt.Printf("Available Tasks (run with \"%s %s\")\n", os.Args[0], "MyTask")
 	for k, _ := range goblTasks {
 		fmt.Printf("\t%s\n", k)
 	}
@@ -67,60 +59,20 @@ func Go() {
 		printInfo()
 		return
 	}
-	if task, ok := goblTasks[os.Args[1]]; ok {
-		runTask(task)
-		return
+	if goblResult := <-RunTask(os.Args[1]); goblResult.Error != nil {
+		fmt.Println(goblResult.Result)
+		fmt.Println(goblResult.Error)
 	}
-	fmt.Println("No such task exists.")
 }
 
-func runTask(g GoblTask) error {
-	for len(g.channel) > 0 {
-		select {
-		case t := <-g.channel:
-			switch t := t.(type) {
-			case GoblWatchStep:
-				// Add to our watchers!
-				//g.steps = append(g.steps, t)
-				fmt.Printf("Add watch %s\n", t.Path)
-			case GoblExecStep:
-				g.steps = append(g.steps, t)
-				fmt.Printf("Exec %+v\n", t.Args)
-			case GoblRunTaskStep:
-				g.steps = append(g.steps, t)
-				fmt.Printf("Add Run %s\n", t.TaskName)
-			}
-		}
+func RunTask(taskName string) (errChan chan GoblResult) {
+	g, ok := goblTasks[taskName]
+	if !ok {
+		errChan = make(chan GoblResult)
+		errChan <- GoblResult{nil, fmt.Errorf("task \"%s\" does not exist", taskName)}
+	} else {
+		g.compile()
+		errChan = g.run()
 	}
-
-	// IF we have watchers, then we'll spawn a go coroutine here!
-	for _, step := range g.steps {
-		switch step := step.(type) {
-		case GoblExecStep:
-			fmt.Println("Exec")
-		case GoblRunTaskStep:
-			run, ok := goblTasks[step.TaskName]
-			if ok {
-				err := runTask(run)
-				if err != nil {
-					fmt.Println(err)
-				}
-			}
-			fmt.Println("Ran subtask")
-		}
-	}
-
-	return nil
-	/*if len(g.watching) > 0 {
-		for watch := range g.Watch {
-			g.watching = append(g.watching, watch)
-		}
-	}
-	if len(g.running) > 0 {
-		for run := range g.Run {
-			fmt.Printf("added run: %+v\n", run)
-		}
-	}
-
-	fmt.Printf("%+v\n", g)*/
+	return
 }

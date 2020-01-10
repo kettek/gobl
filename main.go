@@ -1,29 +1,41 @@
 package main
 
 import (
+	"fmt"
+
 	. "github.com/kettek/gobl/gobl"
 )
 
 func main() {
-	/*task := gobl.Task("Test")
-	task.Watch <- "testdir/**"
-	task.Exec <- "go build client"
-	task.Catch <- func(err error) error {
-		return nil
-	}
-	task.Run()*/
-
 	task := Task("watch")
-	task <- Watch("testdir/")
-	task <- RunTask("build")
-	/*task <- gobl.Exec("go build client")
-	task <- gobl.Catch(func(err error) error {
+	task <- Watch("gobl/*")
+	task <- Run("build")
+	task <- Run("run")
+	task <- Catch(func(err error) error {
+		r := <-RunTask("embeddedTest")
+		fmt.Println(r, err)
 		return nil
-	})*/
+	})
 
 	task2 := Task("build")
-	task2 <- Exec("go build client")
+	task2 <- Exec("ls", "build client")
+	task2 <- Catch(func(err error) error {
+		fmt.Println(err)
+		fmt.Println("going to continue on our merry way!")
+		return nil
+	})
+	task2 <- Result(func(r interface{}) {
+		fmt.Println(r)
+	})
+
+	task3 := Task("run")
+	task3 <- Exec("./client")
+
+	task4 := Task("embeddedTest")
+	task4 <- Exec("whoami")
+	task4 <- Result(func(r interface{}) {
+		fmt.Println("who am I:", r)
+	})
 
 	Go()
-	//gobl.RunTask(task)
 }

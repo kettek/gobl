@@ -23,6 +23,10 @@ type GoblRunTaskStep struct {
 	TaskName string
 }
 
+func (s GoblRunTaskStep) run(r GoblResult) chan GoblResult {
+	return RunTask(s.TaskName)
+}
+
 type GoblResultTaskStep struct {
 	Func func(interface{})
 }
@@ -46,10 +50,6 @@ func (s GoblCatchTaskStep) run(r GoblResult) chan GoblResult {
 		result <- GoblResult{nil, s.Func(fmt.Errorf("%v: %v", r.Error, r.Result))}
 	}()
 	return result
-}
-
-func (s GoblRunTaskStep) run(r GoblResult) chan GoblResult {
-	return RunTask(s.TaskName)
 }
 
 type GoblExecStep struct {

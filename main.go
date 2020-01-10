@@ -12,16 +12,13 @@ func main() {
 	task <- Run("build")
 	task <- Run("run")
 	task <- Catch(func(err error) error {
-		r := <-RunTask("embeddedTest")
-		fmt.Println(r, err)
 		return nil
 	})
 
 	task2 := Task("build")
-	task2 <- Exec("ls-oops")
+	task2 <- Exec("ls")
 	task2 <- Catch(func(err error) error {
-		fmt.Println(err)
-		fmt.Println("going to continue on our merry way!")
+		// Ignore error
 		return nil
 	})
 	task2 <- Result(func(r interface{}) {

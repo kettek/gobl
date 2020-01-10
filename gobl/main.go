@@ -79,28 +79,34 @@ func Go() {
 		printInfo()
 		return
 	}
-	goblResult := <-RunTask(os.Args[1])
-	if goblResult.Result != nil {
-		fmt.Printf("%s%v%s\n", InfoColor, goblResult.Result, Clear)
-	}
-	if goblResult.Error != nil {
-		fmt.Printf("%v\n", goblResult.Error)
-		fmt.Printf("❌ %sTask Failed%s\n", ErrorColor, Clear)
-	} else {
-		fmt.Printf("✔️ %sTask Complete%s\n", SuccessColor, Clear)
-	}
+	<-RunTask(os.Args[1])
 }
 
 func RunTask(taskName string) (errChan chan GoblResult) {
 	g, ok := goblTasks[taskName]
+	errChan = make(chan GoblResult)
 	if !ok {
-		errChan = make(chan GoblResult)
 		go func() {
 			errChan <- GoblResult{nil, fmt.Errorf("🛑 task \"%s\" does not exist", taskName)}
 		}()
 	} else {
+		fmt.Printf("⚡ %sStarting Task%s \"%s\"\n", NoticeColor, Clear, g.Name)
 		g.compile()
-		errChan = g.run()
+		go func() {
+			goblResult := <-g.run()
+
+			if goblResult.Result != nil {
+				fmt.Printf("\t%s%v%s\n", InfoColor, goblResult.Result, Clear)
+			}
+
+			if goblResult.Error != nil {
+				fmt.Printf("\t%v\n", goblResult.Error)
+				fmt.Printf("❌ %sTask \"%s\" Failed%s\n", ErrorColor, g.Name, Clear)
+			} else {
+				fmt.Printf("✔️ %sTask \"%s\" Complete%s\n", SuccessColor, g.Name, Clear)
+			}
+			errChan <- goblResult
+		}()
 	}
 	return
 }

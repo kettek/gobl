@@ -27,7 +27,7 @@ type GoblTask struct {
 }
 
 func (g *GoblTask) runSteps() GoblResult {
-	fmt.Printf("%s: runSteps...\n", g.Name)
+	fmt.Printf("⚡ %sStarting Task%s \"%s\"\n", NoticeColor, Clear, g.Name)
 	prevResult := GoblResult{}
 	for i := 0; i < len(g.steps); i++ {
 		step := g.steps[i]
@@ -47,7 +47,6 @@ func (g *GoblTask) runSteps() GoblResult {
 		}
 		prevResult = goblResult
 	}
-	fmt.Printf("%s: runSteps done\n", g.Name)
 	return prevResult
 }
 
@@ -148,6 +147,7 @@ func (g *GoblTask) runLoop(resultChan chan GoblResult) {
 
 func (g *GoblTask) watchLoop() {
 	if len(g.watcher.WatchedFiles()) > 0 {
+		fmt.Printf("%s: Watching %v\n", g.Name, g.watcher.WatchedFiles())
 		// Watch events goroutine.
 		go func() {
 			for {

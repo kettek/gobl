@@ -6,6 +6,26 @@ import (
 	"os"
 )
 
+var (
+	InfoColor    = Purple
+	NoticeColor  = Teal
+	WarnColor    = Yellow
+	ErrorColor   = Red
+	SuccessColor = Green
+)
+
+var (
+	Black   = "\033[1;30m"
+	Red     = "\033[1;31m"
+	Green   = "\033[1;32m"
+	Yellow  = "\033[1;33m"
+	Purple  = "\033[1;34m"
+	Magenta = "\033[1;35m"
+	Teal    = "\033[1;36m"
+	White   = "\033[1;37m"
+	Clear   = "\033[0m"
+)
+
 func Task(name string) chan GoblStep {
 	goblTasks[name] = &GoblTask{
 		Name:        name,
@@ -48,7 +68,7 @@ func Exec(args ...string) GoblExecStep {
 }
 
 func printInfo() {
-	fmt.Printf("Available Tasks (run with \"%s %s\")\n", os.Args[0], "MyTask")
+	fmt.Printf("%s%s%s\n", InfoColor, "✨ Available Tasks", Clear)
 	for k, _ := range goblTasks {
 		fmt.Printf("\t%s\n", k)
 	}
@@ -59,13 +79,15 @@ func Go() {
 		printInfo()
 		return
 	}
-	if goblResult := <-RunTask(os.Args[1]); goblResult.Error != nil {
-		if goblResult.Result != nil {
-			fmt.Println(goblResult.Result)
-		}
-		if goblResult.Error != nil {
-			fmt.Println(goblResult.Error)
-		}
+	goblResult := <-RunTask(os.Args[1])
+	if goblResult.Result != nil {
+		fmt.Printf("%s%v%s\n", InfoColor, goblResult.Result, Clear)
+	}
+	if goblResult.Error != nil {
+		fmt.Printf("%v\n", goblResult.Error)
+		fmt.Printf("❌ %sTask Failed%s\n", ErrorColor, Clear)
+	} else {
+		fmt.Printf("✔️ %sTask Complete%s\n", SuccessColor, Clear)
 	}
 }
 
@@ -74,7 +96,7 @@ func RunTask(taskName string) (errChan chan GoblResult) {
 	if !ok {
 		errChan = make(chan GoblResult)
 		go func() {
-			errChan <- GoblResult{nil, fmt.Errorf("task \"%s\" does not exist", taskName)}
+			errChan <- GoblResult{nil, fmt.Errorf("🛑 task \"%s\" does not exist", taskName)}
 		}()
 	} else {
 		g.compile()

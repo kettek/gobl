@@ -14,7 +14,6 @@ type GoblWatchStep struct {
 }
 
 func (s GoblWatchStep) run(r GoblResult) chan GoblResult {
-	fmt.Println("GoblWatchTaskStep")
 	result := make(chan GoblResult)
 	result <- GoblResult{}
 	return result
@@ -29,7 +28,6 @@ type GoblResultTaskStep struct {
 }
 
 func (s GoblResultTaskStep) run(r GoblResult) chan GoblResult {
-	fmt.Println("GoblResultTaskStep")
 	result := make(chan GoblResult)
 	go func() {
 		s.Func(r.Result)
@@ -43,7 +41,6 @@ type GoblCatchTaskStep struct {
 }
 
 func (s GoblCatchTaskStep) run(r GoblResult) chan GoblResult {
-	fmt.Println("GoblCatchTaskStep")
 	result := make(chan GoblResult)
 	go func() {
 		result <- GoblResult{nil, s.Func(fmt.Errorf("%v: %v", r.Error, r.Result))}
@@ -52,7 +49,6 @@ func (s GoblCatchTaskStep) run(r GoblResult) chan GoblResult {
 }
 
 func (s GoblRunTaskStep) run(r GoblResult) chan GoblResult {
-	fmt.Println("GoblRunTaskStep")
 	return RunTask(s.TaskName)
 }
 
@@ -61,18 +57,15 @@ type GoblExecStep struct {
 }
 
 func (s GoblExecStep) run(pr GoblResult) chan GoblResult {
-	fmt.Println("GoblExecStep")
 	result := make(chan GoblResult)
 	go func() {
 		cmd := exec.Command(s.Args[0], s.Args[1:]...)
 		var out bytes.Buffer
 		cmd.Stdout = &out
 		if err := cmd.Start(); err != nil {
-			fmt.Println(err)
 			result <- GoblResult{nil, err}
 			return
 		}
-		fmt.Printf("executed... %v\n", s.Args)
 		if err := cmd.Wait(); err != nil {
 			result <- GoblResult{out.String(), err}
 			return

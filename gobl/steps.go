@@ -53,24 +53,45 @@ func (s GoblCatchTaskStep) run(r GoblResult) chan GoblResult {
 }
 
 type GoblExecStep struct {
-	Args []string
+	Args       []string
+	killSignal chan GoblResult
 }
 
 func (s GoblExecStep) run(pr GoblResult) chan GoblResult {
 	result := make(chan GoblResult)
+
+	s.killSignal = make(chan GoblResult)
+	doneSignal := make(chan GoblResult)
+
+	// Create and set up our command before spawning goroutines
+	cmd := exec.Command(s.Args[0], s.Args[1:]...)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	// Loop for either our doneSignal or our external kill signal
 	go func() {
-		cmd := exec.Command(s.Args[0], s.Args[1:]...)
-		var out bytes.Buffer
-		cmd.Stdout = &out
+		select {
+		case r := <-doneSignal:
+			result <- r
+		case <-s.killSignal:
+			if err := cmd.Process.Kill(); err != nil {
+				result <- GoblResult{"FAILED TO KILL", err}
+				return
+			}
+			result <- GoblResult{"killed", nil}
+		}
+	}()
+	// Start and wait for our command.
+	go func() {
 		if err := cmd.Start(); err != nil {
-			result <- GoblResult{nil, err}
+			doneSignal <- GoblResult{nil, err}
 			return
 		}
 		if err := cmd.Wait(); err != nil {
-			result <- GoblResult{out.String(), err}
+			doneSignal <- GoblResult{out.String(), err}
 			return
 		}
-		result <- GoblResult{out.String(), nil}
+		doneSignal <- GoblResult{out.String(), nil}
 	}()
 	return result
 }

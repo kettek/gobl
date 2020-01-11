@@ -123,7 +123,10 @@ func (g *GoblTask) watchLoop() {
 			for {
 				select {
 				case <-g.watcher.Event:
-					g.runChannel <- false
+					// Yeah, I know this is racey.
+					if len(g.runChannel) == 0 {
+						g.runChannel <- false
+					}
 				case err := <-g.watcher.Error:
 					g.stopChannel <- err
 				case <-g.watcher.Closed:
@@ -156,10 +159,7 @@ func (g *GoblTask) run() chan GoblResult {
 //
 
 func (g *GoblTask) Watch(path string) *GoblTask {
-	s := GoblWatchStep{
-		Path: path,
-	}
-	matches, err := filepath.Glob(s.Path)
+	matches, err := filepath.Glob(path)
 	if err != nil {
 		fmt.Println(err)
 	}

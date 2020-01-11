@@ -87,6 +87,7 @@ func RunTask(taskName string) (errChan chan GoblResult) {
 	errChan = make(chan GoblResult)
 	if !ok {
 		go func() {
+			fmt.Printf("🛑 task \"%s\" does not exist", taskName)
 			errChan <- GoblResult{nil, fmt.Errorf("🛑 task \"%s\" does not exist", taskName)}
 		}()
 	} else {

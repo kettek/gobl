@@ -7,32 +7,32 @@ import (
 )
 
 func main() {
-	task := Task("watch")
-	task <- Watch("gobl/*")
-	task <- Run("build")
-	task <- Run("run")
-	task <- Catch(func(err error) error {
-		return nil
-	})
+	Task("watch").
+		Watch("gobl/*").
+		Run("build").
+		Run("run").
+		Catch(func(err error) error {
+			return nil
+		})
 
-	task2 := Task("build")
-	task2 <- Exec("ls")
-	task2 <- Catch(func(err error) error {
-		// Ignore error
-		return nil
-	})
-	task2 <- Result(func(r interface{}) {
-		fmt.Println(r)
-	})
+	Task("build").
+		Exec("ls").
+		Catch(func(err error) error {
+			// Ignore error
+			return nil
+		}).
+		Result(func(r interface{}) {
+			fmt.Println(r)
+		})
 
-	task3 := Task("run")
-	task3 <- Exec("./client")
+	Task("run").
+		Exec("./client")
 
-	task4 := Task("embeddedTest")
-	task4 <- Exec("whoami")
-	task4 <- Result(func(r interface{}) {
-		fmt.Println("who am I:", r)
-	})
+	Task("embeddedTest").
+		Exec("whoami").
+		Result(func(r interface{}) {
+			fmt.Println("who am I:", r)
+		})
 
 	Go()
 }

@@ -95,39 +95,6 @@ func (g *GoblTask) runNextStep() GoblResult {
 	return GoblResult{nil, nil}
 }
 
-func (g *GoblTask) compile() error {
-	for len(g.channel) > 0 {
-		select {
-		case t := <-g.channel:
-			switch t := t.(type) {
-			case GoblWatchStep:
-				// Add to our watchers!
-				matches, err := filepath.Glob(t.Path)
-				if err != nil {
-					fmt.Println(err)
-				}
-				g.watchPaths = append(g.watchPaths, matches...)
-			case GoblExecStep:
-				g.steps = append(g.steps, t)
-			case GoblRunTaskStep:
-				g.steps = append(g.steps, t)
-			case GoblCatchTaskStep:
-				g.steps = append(g.steps, t)
-			case GoblResultTaskStep:
-				g.steps = append(g.steps, t)
-			}
-		}
-	}
-
-	for _, file := range g.watchPaths {
-		if err := g.watcher.Add(file); err != nil {
-			fmt.Println(err)
-		}
-	}
-
-	return nil
-}
-
 func (g *GoblTask) runLoop(resultChan chan GoblResult) {
 	for {
 		select {
@@ -146,8 +113,8 @@ func (g *GoblTask) runLoop(resultChan chan GoblResult) {
 
 func (g *GoblTask) watchLoop() {
 	if len(g.watcher.WatchedFiles()) > 0 {
-		fmt.Printf("👀 Watching: \n")
-		for k, _ := range g.watcher.WatchedFiles() {
+		fmt.Printf("👀 %sWatching%s\n", InfoColor, Clear)
+		for k := range g.watcher.WatchedFiles() {
 			fmt.Printf("\t%s\n", k)
 		}
 		// Watch events goroutine.
@@ -184,4 +151,52 @@ func (g *GoblTask) run() chan GoblResult {
 
 	go g.watchLoop()
 	return result
+}
+
+//
+
+func (g *GoblTask) Watch(path string) *GoblTask {
+	s := GoblWatchStep{
+		Path: path,
+	}
+	matches, err := filepath.Glob(s.Path)
+	if err != nil {
+		fmt.Println(err)
+	}
+	g.watchPaths = append(g.watchPaths, matches...)
+
+	for _, file := range g.watchPaths {
+		if err := g.watcher.Add(file); err != nil {
+			fmt.Println(err)
+		}
+	}
+	return g
+}
+
+func (g *GoblTask) Catch(f func(error) error) *GoblTask {
+	g.steps = append(g.steps, GoblCatchTaskStep{
+		Func: f,
+	})
+	return g
+}
+
+func (g *GoblTask) Result(f func(interface{})) *GoblTask {
+	g.steps = append(g.steps, GoblResultTaskStep{
+		Func: f,
+	})
+	return g
+}
+
+func (g *GoblTask) Run(taskName string) *GoblTask {
+	g.steps = append(g.steps, GoblRunTaskStep{
+		TaskName: taskName,
+	})
+	return g
+}
+
+func (g *GoblTask) Exec(args ...string) *GoblTask {
+	g.steps = append(g.steps, GoblExecStep{
+		Args: args,
+	})
+	return g
 }

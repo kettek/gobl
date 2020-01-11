@@ -26,7 +26,7 @@ var (
 	Clear   = "\033[0m"
 )
 
-func Task(name string) chan GoblStep {
+func Task(name string) *GoblTask {
 	goblTasks[name] = &GoblTask{
 		Name:        name,
 		channel:     make(chan GoblStep, 99),
@@ -34,7 +34,7 @@ func Task(name string) chan GoblStep {
 		runChannel:  make(chan bool),
 		watcher:     watcher.New(),
 	}
-	return goblTasks[name].channel
+	return goblTasks[name]
 }
 
 func Watch(path string) GoblStep {
@@ -92,7 +92,7 @@ func RunTask(taskName string) (errChan chan GoblResult) {
 		}()
 	} else {
 		fmt.Printf("⚡ %sStarting Task%s \"%s\"\n", NoticeColor, Clear, g.Name)
-		g.compile()
+		//g.compile()
 		go func() {
 			goblResult := <-g.run()
 

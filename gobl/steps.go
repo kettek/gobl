@@ -1,8 +1,8 @@
 package gobl
 
 import (
-	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 )
 
@@ -65,8 +65,8 @@ func (s GoblExecStep) run(pr GoblResult) chan GoblResult {
 
 	// Create and set up our command before spawning goroutines
 	cmd := exec.Command(s.Args[0], s.Args[1:]...)
-	var out bytes.Buffer
-	cmd.Stdout = &out
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
 	// Loop for either our doneSignal or our external kill signal
 	go func() {
@@ -75,7 +75,7 @@ func (s GoblExecStep) run(pr GoblResult) chan GoblResult {
 			result <- r
 		case <-s.killSignal:
 			if err := cmd.Process.Kill(); err != nil {
-				result <- GoblResult{"FAILED TO KILL", err}
+				result <- GoblResult{nil, err}
 				return
 			}
 			result <- GoblResult{"killed", nil}
@@ -88,10 +88,10 @@ func (s GoblExecStep) run(pr GoblResult) chan GoblResult {
 			return
 		}
 		if err := cmd.Wait(); err != nil {
-			doneSignal <- GoblResult{out.String(), err}
+			doneSignal <- GoblResult{nil, err}
 			return
 		}
-		doneSignal <- GoblResult{out.String(), nil}
+		doneSignal <- GoblResult{nil, nil}
 	}()
 	return result
 }

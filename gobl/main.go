@@ -102,8 +102,7 @@ func RunTask(taskName string) (errChan chan GoblResult) {
 			}
 
 			if goblResult.Error != nil {
-				fmt.Printf("\t%v\n", goblResult.Error)
-				fmt.Printf("❌  %sTask \"%s\" Failed%s\n", ErrorColor, g.Name, Clear)
+				fmt.Printf("❌  %sTask \"%s\" Failed%s: %s\n", ErrorColor, g.Name, Clear, goblResult.Error)
 			} else {
 				fmt.Printf("✔️  %sTask \"%s\" Complete%s\n", SuccessColor, g.Name, Clear)
 			}

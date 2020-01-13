@@ -2,8 +2,9 @@ package gobl
 
 import (
 	"fmt"
-	"github.com/radovskyb/watcher"
 	"os"
+
+	"github.com/radovskyb/watcher"
 )
 
 var (
@@ -68,7 +69,7 @@ func Exec(args ...string) GoblExecStep {
 }
 
 func printInfo() {
-	fmt.Printf("%s%s%s\n", InfoColor, "✨ Available Tasks", Clear)
+	fmt.Printf("%s%s%s\n", InfoColor, "✨  Available Tasks", Clear)
 	for k, _ := range goblTasks {
 		fmt.Printf("\t%s\n", k)
 	}
@@ -87,11 +88,11 @@ func RunTask(taskName string) (errChan chan GoblResult) {
 	errChan = make(chan GoblResult)
 	if !ok {
 		go func() {
-			fmt.Printf("🛑 task \"%s\" does not exist", taskName)
+			fmt.Printf("🛑  task \"%s\" does not exist", taskName)
 			errChan <- GoblResult{nil, fmt.Errorf("🛑 task \"%s\" does not exist", taskName)}
 		}()
 	} else {
-		fmt.Printf("⚡ %sStarting Task%s \"%s\"\n", NoticeColor, Clear, g.Name)
+		fmt.Printf("⚡  %sStarting Task%s \"%s\"\n", NoticeColor, Clear, g.Name)
 		//g.compile()
 		go func() {
 			goblResult := <-g.run()
@@ -102,9 +103,9 @@ func RunTask(taskName string) (errChan chan GoblResult) {
 
 			if goblResult.Error != nil {
 				fmt.Printf("\t%v\n", goblResult.Error)
-				fmt.Printf("❌ %sTask \"%s\" Failed%s\n", ErrorColor, g.Name, Clear)
+				fmt.Printf("❌  %sTask \"%s\" Failed%s\n", ErrorColor, g.Name, Clear)
 			} else {
-				fmt.Printf("✔️ %sTask \"%s\" Complete%s\n", SuccessColor, g.Name, Clear)
+				fmt.Printf("✔️  %sTask \"%s\" Complete%s\n", SuccessColor, g.Name, Clear)
 			}
 			errChan <- goblResult
 		}()

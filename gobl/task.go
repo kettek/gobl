@@ -113,7 +113,7 @@ func (g *GoblTask) runLoop(resultChan chan GoblResult) {
 
 func (g *GoblTask) watchLoop() {
 	if len(g.watcher.WatchedFiles()) > 0 {
-		fmt.Printf("👀 %sWatching%s\n", InfoColor, Clear)
+		fmt.Printf("👀  %sWatching%s\n", InfoColor, Clear)
 		for k := range g.watcher.WatchedFiles() {
 			fmt.Printf("\t%s\n", k)
 		}

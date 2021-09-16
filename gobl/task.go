@@ -158,18 +158,20 @@ func (g *GoblTask) run() chan GoblResult {
 
 //
 
-func (g *GoblTask) Watch(path string) *GoblTask {
-	matches, err := filepath.Glob(path)
-	if err != nil {
-		fmt.Println(err)
-	}
-	g.watchPaths = append(g.watchPaths, matches...)
+func (g *GoblTask) Watch(paths ...string) *GoblTask {
+  for _, path := range paths {
+	  matches, err := filepath.Glob(path)
+	  if err != nil {
+	  	fmt.Println(err)
+	  }
+	  g.watchPaths = append(g.watchPaths, matches...)
 
-	for _, file := range g.watchPaths {
-		if err := g.watcher.Add(file); err != nil {
-			fmt.Println(err)
-		}
-	}
+	  for _, file := range g.watchPaths {
+	  	if err := g.watcher.Add(file); err != nil {
+	  		fmt.Println(err)
+	  	}
+	  }
+  }
 	return g
 }
 

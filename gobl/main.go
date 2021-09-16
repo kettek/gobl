@@ -38,9 +38,9 @@ func Task(name string) *GoblTask {
 	return goblTasks[name]
 }
 
-func Watch(path string) GoblStep {
+func Watch(paths ...string) GoblStep {
 	return GoblWatchStep{
-		Path: path,
+		Paths: paths,
 	}
 }
 

@@ -10,7 +10,7 @@ type GoblStep interface {
 	run(GoblResult) chan GoblResult
 }
 type GoblWatchStep struct {
-	Path string
+	Paths []string
 }
 
 func (s GoblWatchStep) run(r GoblResult) chan GoblResult {

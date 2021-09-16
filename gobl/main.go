@@ -68,6 +68,18 @@ func Exec(args ...string) GoblExecStep {
 	}
 }
 
+func Chdir(path string) GoblChdirStep {
+  return GoblChdirStep{
+    Path: path,
+  }
+}
+
+func Exists(path string) GoblExistsStep {
+  return GoblExistsStep{
+    Path: path,
+  }
+}
+
 func printInfo() {
 	fmt.Printf("%s%s%s\n", InfoColor, "✨  Available Tasks", Clear)
 	for k, _ := range goblTasks {

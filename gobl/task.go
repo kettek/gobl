@@ -200,3 +200,17 @@ func (g *GoblTask) Exec(args ...string) *GoblTask {
 	})
 	return g
 }
+
+func (g *GoblTask) Chdir(path string) *GoblTask {
+  g.steps = append(g.steps, GoblChdirStep{
+    Path: path,
+  })
+  return g
+}
+
+func (g *GoblTask) Exists(path string) *GoblTask {
+  g.steps = append(g.steps, GoblExistsStep{
+    Path: path,
+  })
+  return g
+}

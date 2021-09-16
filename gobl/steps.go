@@ -2,7 +2,8 @@ package gobl
 
 import (
 	"fmt"
-  "os"
+	"os"
+
 	"os/exec"
 )
 
@@ -97,21 +98,21 @@ func (s GoblExecStep) run(pr GoblResult) chan GoblResult {
 }
 
 type GoblChdirStep struct {
-  Path        string
+	Path string
 }
 
 func (s GoblChdirStep) run(pr GoblResult) chan GoblResult {
 	result := make(chan GoblResult)
 
 	go func() {
-    if err := os.Chdir(s.Path); err != nil {
+		if err := os.Chdir(s.Path); err != nil {
 			result <- GoblResult{nil, err}
-      return
-    }
-    wd, err := os.Getwd()
-    if err != nil {
-      result <- GoblResult{nil, nil}
-    }
+			return
+		}
+		wd, err := os.Getwd()
+		if err != nil {
+			result <- GoblResult{nil, nil}
+		}
 		result <- GoblResult{wd, nil}
 	}()
 
@@ -119,25 +120,23 @@ func (s GoblChdirStep) run(pr GoblResult) chan GoblResult {
 }
 
 type GoblExistsStep struct {
-  Path        string
+	Path string
 }
 
 func (s GoblExistsStep) run(pr GoblResult) chan GoblResult {
 	result := make(chan GoblResult)
 
 	go func() {
-    info, err := os.Stat(s.Path)
-    if err != nil {
+		info, err := os.Stat(s.Path)
+		if err != nil {
 			result <- GoblResult{nil, err}
-      return
-    }
+			return
+		}
 		result <- GoblResult{info, nil}
 	}()
 
 	return result
 }
-
-
 
 type GoblCanKill struct {
 }

@@ -159,19 +159,19 @@ func (g *GoblTask) run() chan GoblResult {
 //
 
 func (g *GoblTask) Watch(paths ...string) *GoblTask {
-  for _, path := range paths {
-	  matches, err := filepath.Glob(path)
-	  if err != nil {
-	  	fmt.Println(err)
-	  }
-	  g.watchPaths = append(g.watchPaths, matches...)
+	for _, path := range paths {
+		matches, err := filepath.Glob(path)
+		if err != nil {
+			fmt.Println(err)
+		}
+		g.watchPaths = append(g.watchPaths, matches...)
 
-	  for _, file := range g.watchPaths {
-	  	if err := g.watcher.Add(file); err != nil {
-	  		fmt.Println(err)
-	  	}
-	  }
-  }
+		for _, file := range g.watchPaths {
+			if err := g.watcher.Add(file); err != nil {
+				fmt.Println(err)
+			}
+		}
+	}
 	return g
 }
 
@@ -204,15 +204,15 @@ func (g *GoblTask) Exec(args ...string) *GoblTask {
 }
 
 func (g *GoblTask) Chdir(path string) *GoblTask {
-  g.steps = append(g.steps, GoblChdirStep{
-    Path: path,
-  })
-  return g
+	g.steps = append(g.steps, GoblChdirStep{
+		Path: path,
+	})
+	return g
 }
 
 func (g *GoblTask) Exists(path string) *GoblTask {
-  g.steps = append(g.steps, GoblExistsStep{
-    Path: path,
-  })
-  return g
+	g.steps = append(g.steps, GoblExistsStep{
+		Path: path,
+	})
+	return g
 }

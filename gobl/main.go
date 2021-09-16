@@ -69,15 +69,15 @@ func Exec(args ...string) GoblExecStep {
 }
 
 func Chdir(path string) GoblChdirStep {
-  return GoblChdirStep{
-    Path: path,
-  }
+	return GoblChdirStep{
+		Path: path,
+	}
 }
 
 func Exists(path string) GoblExistsStep {
-  return GoblExistsStep{
-    Path: path,
-  }
+	return GoblExistsStep{
+		Path: path,
+	}
 }
 
 func printInfo() {

@@ -82,7 +82,7 @@ func Exists(path string) GoblExistsStep {
 
 func printInfo() {
 	fmt.Printf("%s%s%s\n", InfoColor, "✨  Available Tasks", Clear)
-	for k, _ := range goblTasks {
+	for k := range goblTasks {
 		fmt.Printf("\t%s\n", k)
 	}
 }

@@ -10,6 +10,7 @@ import (
 type GoblStep interface {
 	run(GoblResult) chan GoblResult
 }
+
 type GoblWatchStep struct {
 	Paths []string
 }

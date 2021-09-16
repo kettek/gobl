@@ -20,7 +20,6 @@ type GoblTask struct {
 	watcher     *watcher.Watcher
 	watchPaths  []string
 	steps       []GoblStep
-	stepIndex   int
 	channel     chan GoblStep
 	runChannel  chan bool
 	stopChannel chan error
@@ -61,7 +60,7 @@ func (g *GoblTask) getFollowingCatch(pos int) *GoblCatchTaskStep {
 	return nil
 }
 
-func (g *GoblTask) getFollowingResult(pos int) *GoblResultTaskStep {
+/*func (g *GoblTask) getFollowingResult(pos int) *GoblResultTaskStep {
 	if pos+1 >= len(g.steps) {
 		return nil
 	}
@@ -71,36 +70,14 @@ func (g *GoblTask) getFollowingResult(pos int) *GoblResultTaskStep {
 		return &step
 	}
 	return nil
-}
-
-func (g *GoblTask) getNextStep() GoblStep {
-	if g.stepIndex+1 >= len(g.steps) {
-		return nil
-	}
-	return g.steps[g.stepIndex+1]
-}
-
-func (g *GoblTask) runNextStep() GoblResult {
-	if g.stepIndex+1 >= len(g.steps) {
-		g.stepIndex = 0
-		return GoblResult{nil, nil}
-	}
-	g.stepIndex++
-	switch step := g.steps[g.stepIndex].(type) {
-	case GoblExecStep:
-		fmt.Printf("%s: Exec %s\n", g.Name, step.Args)
-	case GoblRunTaskStep:
-		return <-RunTask(step.TaskName)
-	}
-	return GoblResult{nil, nil}
-}
+}*/
 
 func (g *GoblTask) runLoop(resultChan chan GoblResult) {
 	for {
 		select {
 		case shouldExit := <-g.runChannel:
 			result := g.runSteps()
-			if shouldExit == true {
+			if shouldExit {
 				resultChan <- result
 				return
 			}

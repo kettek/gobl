@@ -42,62 +42,6 @@ func Task(name string) *GoblTask {
 	return goblTasks[name]
 }
 
-// Watch sets up watching one or more glob paths.
-func Watch(paths ...string) GoblStep {
-	return GoblWatchStep{
-		Paths: paths,
-	}
-}
-
-// Catch handles any errors of preceding steps.
-func Catch(f func(error) error) GoblStep {
-	return GoblCatchTaskStep{
-		Func: f,
-	}
-}
-
-// Result handles the result of the previous step.
-func Result(f func(interface{})) GoblStep {
-	return GoblResultTaskStep{
-		Func: f,
-	}
-}
-
-// Run runs a given task by its name.
-func Run(taskName string) GoblStep {
-	return GoblRunTaskStep{
-		TaskName: taskName,
-	}
-}
-
-/*// Env sets an environment variable.
-func Env(args ...string) GoblEnvStep {
-	return GoblEnvStep{
-		Args: args,
-	}
-}*/
-
-// Exec runs a command.
-func Exec(args ...string) GoblExecStep {
-	return GoblExecStep{
-		Args: args,
-	}
-}
-
-// Chdir changes the current directory to the one provided.
-func Chdir(path string) GoblChdirStep {
-	return GoblChdirStep{
-		Path: path,
-	}
-}
-
-// Exists checks if a path exists, returning an fs.FileInfo.
-func Exists(path string) GoblExistsStep {
-	return GoblExistsStep{
-		Path: path,
-	}
-}
-
 func printInfo() {
 	fmt.Printf("%s%s%s\n", InfoColor, "✨  Available Tasks", Clear)
 	for k := range goblTasks {

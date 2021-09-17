@@ -75,15 +75,16 @@ func (s GoblEnvStep) run(pr GoblResult) chan GoblResult {
 
 // GoblExecStep handles executing a command.
 type GoblExecStep struct {
-	Args       []string
-	killSignal chan GoblResult
+	Args []string
 }
 
 func (s GoblExecStep) run(pr GoblResult) chan GoblResult {
 	result := make(chan GoblResult)
 
-	s.killSignal = make(chan GoblResult)
+	killSignal := make(chan GoblResult)
 	doneSignal := make(chan GoblResult)
+
+	pr.Task.processKillChannels = append(pr.Task.processKillChannels, killSignal)
 
 	// Create and set up our command before spawning goroutines
 	cmd := exec.Command(s.Args[0], s.Args[1:]...)
@@ -94,14 +95,21 @@ func (s GoblExecStep) run(pr GoblResult) chan GoblResult {
 	// Loop for either our doneSignal or our external kill signal
 	go func() {
 		select {
-		case r := <-doneSignal:
-			result <- r
-		case <-s.killSignal:
+		case <-killSignal:
 			if err := cmd.Process.Kill(); err != nil {
 				result <- GoblResult{nil, err, nil}
 				return
 			}
 			result <- GoblResult{"killed", nil, nil}
+		case r := <-doneSignal:
+			result <- r
+		}
+		// FIXME: This is really overreaching for this step to change the Task's own properties.
+		for i, v := range pr.Task.processKillChannels {
+			if v == killSignal {
+				pr.Task.processKillChannels[i] = pr.Task.processKillChannels[len(pr.Task.processKillChannels)-1]
+				pr.Task.processKillChannels = pr.Task.processKillChannels[:len(pr.Task.processKillChannels)-1]
+			}
 		}
 	}()
 	// Start and wait for our command.

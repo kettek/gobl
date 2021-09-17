@@ -34,7 +34,6 @@ var (
 func Task(name string) *GoblTask {
 	goblTasks[name] = &GoblTask{
 		Name:        name,
-		channel:     make(chan GoblStep, 99),
 		stopChannel: make(chan error),
 		runChannel:  make(chan bool),
 		watcher:     watcher.New(),

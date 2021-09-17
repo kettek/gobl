@@ -26,7 +26,6 @@ type GoblTask struct {
 	watcher             *watcher.Watcher
 	watchPaths          []string
 	steps               []GoblStep
-	channel             chan GoblStep
 	runChannel          chan bool
 	stopChannel         chan error
 	processKillChannels []chan GoblResult

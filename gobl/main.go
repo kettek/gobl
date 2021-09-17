@@ -69,6 +69,13 @@ func Run(taskName string) GoblStep {
 	}
 }
 
+/*// Env sets an environment variable.
+func Env(args ...string) GoblEnvStep {
+	return GoblEnvStep{
+		Args: args,
+	}
+}*/
+
 // Exec runs a command.
 func Exec(args ...string) GoblExecStep {
 	return GoblExecStep{
@@ -113,7 +120,7 @@ func RunTask(taskName string) (errChan chan GoblResult) {
 	if !ok {
 		go func() {
 			fmt.Printf("🛑  task \"%s\" does not exist", taskName)
-			errChan <- GoblResult{nil, fmt.Errorf("🛑 task \"%s\" does not exist", taskName)}
+			errChan <- GoblResult{nil, fmt.Errorf("🛑 task \"%s\" does not exist", taskName), nil}
 		}()
 	} else {
 		fmt.Printf("⚡  %sStarting Task%s \"%s\"\n", NoticeColor, Clear, g.Name)

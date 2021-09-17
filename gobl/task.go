@@ -12,6 +12,7 @@ import (
 type GoblResult struct {
 	Result interface{}
 	Error  error
+	Task   *GoblTask // TODO: Move Task to some sort of GoblContext that gets passed into steps.
 }
 
 var goblTasks = make(map[string]*GoblTask)
@@ -19,6 +20,7 @@ var goblTasks = make(map[string]*GoblTask)
 // GoblTask is a named container for steps.
 type GoblTask struct {
 	Name        string
+	env         []string
 	watcher     *watcher.Watcher
 	watchPaths  []string
 	steps       []GoblStep
@@ -28,11 +30,12 @@ type GoblTask struct {
 }
 
 func (g *GoblTask) runSteps() GoblResult {
-	prevResult := GoblResult{}
+	prevResult := GoblResult{Task: g}
 	for i := 0; i < len(g.steps); i++ {
 		step := g.steps[i]
 
 		goblResult := <-step.run(prevResult)
+		goblResult.Task = g
 		catchStep := g.getFollowingCatch(i)
 		if goblResult.Error != nil {
 			if catchStep == nil {
@@ -84,7 +87,7 @@ func (g *GoblTask) runLoop(resultChan chan GoblResult) {
 				return
 			}
 		case err := <-g.stopChannel:
-			resultChan <- GoblResult{nil, err}
+			resultChan <- GoblResult{nil, err, g}
 			return
 		}
 	}
@@ -180,6 +183,14 @@ func (g *GoblTask) Run(taskName string) *GoblTask {
 // Exec executes a command.
 func (g *GoblTask) Exec(args ...string) *GoblTask {
 	g.steps = append(g.steps, GoblExecStep{
+		Args: args,
+	})
+	return g
+}
+
+// Env sets environment variables.
+func (g *GoblTask) Env(args ...string) *GoblTask {
+	g.steps = append(g.steps, GoblEnvStep{
 		Args: args,
 	})
 	return g

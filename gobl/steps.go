@@ -41,7 +41,7 @@ func (s GoblResultTaskStep) run(r GoblResult) chan GoblResult {
 	result := make(chan GoblResult)
 	go func() {
 		s.Func(r.Result)
-		result <- GoblResult{nil, nil}
+		result <- GoblResult{nil, nil, nil}
 	}()
 	return result
 }
@@ -54,7 +54,21 @@ type GoblCatchTaskStep struct {
 func (s GoblCatchTaskStep) run(r GoblResult) chan GoblResult {
 	result := make(chan GoblResult)
 	go func() {
-		result <- GoblResult{nil, s.Func(fmt.Errorf("%v: %v", r.Error, r.Result))}
+		result <- GoblResult{nil, s.Func(fmt.Errorf("%v: %v", r.Error, r.Result)), nil}
+	}()
+	return result
+}
+
+// GoblEnvStep sets up environment variables to use.
+type GoblEnvStep struct {
+	Args []string
+}
+
+func (s GoblEnvStep) run(pr GoblResult) chan GoblResult {
+	result := make(chan GoblResult)
+	go func() {
+		pr.Task.env = append(pr.Task.env, s.Args...)
+		result <- GoblResult{}
 	}()
 	return result
 }
@@ -75,6 +89,7 @@ func (s GoblExecStep) run(pr GoblResult) chan GoblResult {
 	cmd := exec.Command(s.Args[0], s.Args[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Env = append(os.Environ(), pr.Task.env...)
 
 	// Loop for either our doneSignal or our external kill signal
 	go func() {
@@ -83,23 +98,23 @@ func (s GoblExecStep) run(pr GoblResult) chan GoblResult {
 			result <- r
 		case <-s.killSignal:
 			if err := cmd.Process.Kill(); err != nil {
-				result <- GoblResult{nil, err}
+				result <- GoblResult{nil, err, nil}
 				return
 			}
-			result <- GoblResult{"killed", nil}
+			result <- GoblResult{"killed", nil, nil}
 		}
 	}()
 	// Start and wait for our command.
 	go func() {
 		if err := cmd.Start(); err != nil {
-			doneSignal <- GoblResult{nil, err}
+			doneSignal <- GoblResult{nil, err, nil}
 			return
 		}
 		if err := cmd.Wait(); err != nil {
-			doneSignal <- GoblResult{nil, err}
+			doneSignal <- GoblResult{nil, err, nil}
 			return
 		}
-		doneSignal <- GoblResult{nil, nil}
+		doneSignal <- GoblResult{nil, nil, nil}
 	}()
 	return result
 }
@@ -114,14 +129,14 @@ func (s GoblChdirStep) run(pr GoblResult) chan GoblResult {
 
 	go func() {
 		if err := os.Chdir(s.Path); err != nil {
-			result <- GoblResult{nil, err}
+			result <- GoblResult{nil, err, nil}
 			return
 		}
 		wd, err := os.Getwd()
 		if err != nil {
-			result <- GoblResult{nil, nil}
+			result <- GoblResult{nil, nil, nil}
 		}
-		result <- GoblResult{wd, nil}
+		result <- GoblResult{wd, nil, nil}
 	}()
 
 	return result
@@ -138,10 +153,10 @@ func (s GoblExistsStep) run(pr GoblResult) chan GoblResult {
 	go func() {
 		info, err := os.Stat(s.Path)
 		if err != nil {
-			result <- GoblResult{nil, err}
+			result <- GoblResult{nil, err, nil}
 			return
 		}
-		result <- GoblResult{info, nil}
+		result <- GoblResult{info, nil, nil}
 	}()
 
 	return result

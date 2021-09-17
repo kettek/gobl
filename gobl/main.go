@@ -3,6 +3,7 @@ package gobl
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/radovskyb/watcher"
 )
@@ -125,8 +126,10 @@ func RunTask(taskName string) (errChan chan GoblResult) {
 	} else {
 		fmt.Printf("⚡  %sStarting Task%s \"%s\"\n", NoticeColor, Clear, g.Name)
 		//g.compile()
+		t1 := time.Now()
 		go func() {
 			goblResult := <-g.run()
+			diff := time.Now().Sub(t1)
 
 			if goblResult.Result != nil {
 				fmt.Printf("\t%s%v%s\n", InfoColor, goblResult.Result, Clear)
@@ -135,7 +138,7 @@ func RunTask(taskName string) (errChan chan GoblResult) {
 			if goblResult.Error != nil {
 				fmt.Printf("❌  %sTask \"%s\" Failed%s: %s\n", ErrorColor, g.Name, Clear, goblResult.Error)
 			} else {
-				fmt.Printf("✔️  %sTask \"%s\" Complete%s\n", SuccessColor, g.Name, Clear)
+				fmt.Printf("✔️  %sTask \"%s\" Complete in %s%s\n", SuccessColor, g.Name, diff, Clear)
 			}
 			errChan <- goblResult
 		}()

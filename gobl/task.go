@@ -2,6 +2,7 @@ package gobl
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -32,6 +33,17 @@ type GoblTask struct {
 }
 
 func (g *GoblTask) runSteps() GoblResult {
+	// Store working directory so we can restore on close.
+	wd, err := os.Getwd()
+	if err != nil {
+		fmt.Println("Couldn't get working directory", err)
+	}
+	defer func() {
+		if err := os.Chdir(wd); err != nil {
+			fmt.Println("Couldn't restore working directory", err)
+		}
+	}()
+
 	prevResult := GoblResult{Task: g}
 	for i := 0; i < len(g.steps); i++ {
 		step := g.steps[i]

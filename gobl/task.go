@@ -8,6 +8,7 @@ import (
 	"github.com/radovskyb/watcher"
 )
 
+// GoblResult represents the result of a step.
 type GoblResult struct {
 	Result interface{}
 	Error  error
@@ -15,6 +16,7 @@ type GoblResult struct {
 
 var goblTasks = make(map[string]*GoblTask)
 
+// GoblTask is a named container for steps.
 type GoblTask struct {
 	Name        string
 	watcher     *watcher.Watcher
@@ -133,8 +135,7 @@ func (g *GoblTask) run() chan GoblResult {
 	return result
 }
 
-//
-
+// Watch sets up a variadic number of glob paths to watch.
 func (g *GoblTask) Watch(paths ...string) *GoblTask {
 	for _, path := range paths {
 		matches, err := filepath.Glob(path)
@@ -152,6 +153,7 @@ func (g *GoblTask) Watch(paths ...string) *GoblTask {
 	return g
 }
 
+// Catch catches the error of any preceding steps.
 func (g *GoblTask) Catch(f func(error) error) *GoblTask {
 	g.steps = append(g.steps, GoblCatchTaskStep{
 		Func: f,
@@ -159,6 +161,7 @@ func (g *GoblTask) Catch(f func(error) error) *GoblTask {
 	return g
 }
 
+// Result receives an interface to the result of the last step.
 func (g *GoblTask) Result(f func(interface{})) *GoblTask {
 	g.steps = append(g.steps, GoblResultTaskStep{
 		Func: f,
@@ -166,6 +169,7 @@ func (g *GoblTask) Result(f func(interface{})) *GoblTask {
 	return g
 }
 
+// Run runs a task with the given name.
 func (g *GoblTask) Run(taskName string) *GoblTask {
 	g.steps = append(g.steps, GoblRunTaskStep{
 		TaskName: taskName,
@@ -173,6 +177,7 @@ func (g *GoblTask) Run(taskName string) *GoblTask {
 	return g
 }
 
+// Exec executes a command.
 func (g *GoblTask) Exec(args ...string) *GoblTask {
 	g.steps = append(g.steps, GoblExecStep{
 		Args: args,
@@ -180,6 +185,7 @@ func (g *GoblTask) Exec(args ...string) *GoblTask {
 	return g
 }
 
+// Chdir changes the current directory.
 func (g *GoblTask) Chdir(path string) *GoblTask {
 	g.steps = append(g.steps, GoblChdirStep{
 		Path: path,
@@ -187,6 +193,7 @@ func (g *GoblTask) Chdir(path string) *GoblTask {
 	return g
 }
 
+// Exists checks if the given file or directory exists.
 func (g *GoblTask) Exists(path string) *GoblTask {
 	g.steps = append(g.steps, GoblExistsStep{
 		Path: path,

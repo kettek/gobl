@@ -7,10 +7,12 @@ import (
 	"os/exec"
 )
 
+// GoblStep is the interface that all gobl steps adhere to.
 type GoblStep interface {
 	run(GoblResult) chan GoblResult
 }
 
+// GoblWatchStep handles setting up watch conditions.
 type GoblWatchStep struct {
 	Paths []string
 }
@@ -21,6 +23,7 @@ func (s GoblWatchStep) run(r GoblResult) chan GoblResult {
 	return result
 }
 
+// GoblRunTaskStep handles running a new step.
 type GoblRunTaskStep struct {
 	TaskName string
 }
@@ -29,6 +32,7 @@ func (s GoblRunTaskStep) run(r GoblResult) chan GoblResult {
 	return RunTask(s.TaskName)
 }
 
+// GoblResultTaskStep handles the result of a previous step.
 type GoblResultTaskStep struct {
 	Func func(interface{})
 }
@@ -42,6 +46,7 @@ func (s GoblResultTaskStep) run(r GoblResult) chan GoblResult {
 	return result
 }
 
+// GoblCatchTaskStep handles catching errors from any preceding steps.
 type GoblCatchTaskStep struct {
 	Func func(error) error
 }
@@ -54,6 +59,7 @@ func (s GoblCatchTaskStep) run(r GoblResult) chan GoblResult {
 	return result
 }
 
+// GoblExecStep handles executing a command.
 type GoblExecStep struct {
 	Args       []string
 	killSignal chan GoblResult
@@ -98,6 +104,7 @@ func (s GoblExecStep) run(pr GoblResult) chan GoblResult {
 	return result
 }
 
+// GoblChdirStep handles changing the current working directory.
 type GoblChdirStep struct {
 	Path string
 }
@@ -120,6 +127,7 @@ func (s GoblChdirStep) run(pr GoblResult) chan GoblResult {
 	return result
 }
 
+// GoblExistsStep handles checking if a directory or file exists.
 type GoblExistsStep struct {
 	Path string
 }
@@ -139,5 +147,6 @@ func (s GoblExistsStep) run(pr GoblResult) chan GoblResult {
 	return result
 }
 
+// GoblCanKill does nothing.
 type GoblCanKill struct {
 }

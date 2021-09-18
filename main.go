@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/kettek/gobl/pkg/steps"
 	"github.com/radovskyb/watcher"
 )
 
@@ -42,13 +43,6 @@ var (
 	FailedTaskMessage     = "❌  %sTask \"%s\" Failed%s: %s"
 )
 
-// Result represents the result of a step.
-type Result struct {
-	Result interface{}
-	Error  error
-	Task   *GoblTask // TODO: Move Task to some sort of GoblContext that gets passed into steps.
-}
-
 // Task is a container for various steps.
 func Task(name string) *GoblTask {
 	Tasks[name] = &GoblTask{
@@ -78,13 +72,13 @@ func Go() {
 }
 
 // RunTask begins running a specifc named task.
-func RunTask(taskName string) (errChan chan Result) {
+func RunTask(taskName string) (errChan chan steps.Result) {
 	g, ok := Tasks[taskName]
-	errChan = make(chan Result)
+	errChan = make(chan steps.Result)
 	if !ok {
 		go func() {
 			fmt.Printf(MissingTaskMessage+"\n", taskName)
-			errChan <- Result{nil, fmt.Errorf(MissingTaskMessage, taskName), nil}
+			errChan <- steps.Result{Result: nil, Error: fmt.Errorf(MissingTaskMessage, taskName), Context: nil}
 		}()
 	} else {
 		fmt.Printf(StartingTaskMessage+"\n", NoticeColor, Clear, g.Name)

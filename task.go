@@ -6,23 +6,25 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/kettek/gobl/pkg/steps"
+
 	"github.com/radovskyb/watcher"
 )
 
 // GoblTask is a named container for steps.
 type GoblTask struct {
-	Name                string
-	running             bool
-	env                 []string
-	watcher             *watcher.Watcher
-	watchPaths          []string
-	steps               []Step
-	runChannel          chan bool
-	stopChannel         chan error
-	processKillChannels []chan Result
+	Name        string
+	running     bool
+	watcher     *watcher.Watcher
+	watchPaths  []string
+	steps       []steps.Step
+	runChannel  chan bool
+	stopChannel chan error
+	context     Context
 }
 
-func (g *GoblTask) runSteps() Result {
+// TODO: We should have each step able to be regular or parallel. Either one would receive an input channel for kill/reset and return an output channel for complete/update/etc.. Parallel steps, such as Watch, would simply run, then processing would immediately continue to the next step (which might block). These parallel operations channels would be added to the Task in a separate slice.
+func (g *GoblTask) runSteps() steps.Result {
 	// Store working directory so we can restore on close.
 	wd, err := os.Getwd()
 	if err != nil {
@@ -34,60 +36,60 @@ func (g *GoblTask) runSteps() Result {
 		}
 	}()
 
-	prevResult := Result{Task: g}
+	prevResult := steps.Result{Context: &g.context}
 	for i := 0; i < len(g.steps); i++ {
 		step := g.steps[i]
 
-		goblResult := <-step.run(prevResult)
-		goblResult.Task = g
+		result := <-step.Run(prevResult)
+		result.Context = &g.context
 		catchStep := g.getFollowingCatch(i)
-		if goblResult.Error != nil {
+		if result.Error != nil {
 			if catchStep == nil {
-				return goblResult
+				return result
 			}
-			if catchResult := <-catchStep.run(goblResult); catchResult.Error != nil {
+			if catchResult := <-catchStep.Run(result); catchResult.Error != nil {
 				return catchResult
 			}
 		}
 		if catchStep != nil {
 			i++
 		}
-		prevResult = goblResult
+		prevResult = result
 	}
 	return prevResult
 }
 
 func (g *GoblTask) killProcesses() {
-	for _, ch := range g.processKillChannels {
-		ch <- Result{}
+	for _, ch := range g.context.processKillChannels {
+		ch <- steps.Result{}
 	}
 }
 
-func (g *GoblTask) getFollowingCatch(pos int) *CatchTaskStep {
+func (g *GoblTask) getFollowingCatch(pos int) steps.Step {
 	if pos+1 >= len(g.steps) {
 		return nil
 	}
 	step := g.steps[pos+1]
 	switch step := step.(type) {
-	case CatchTaskStep:
+	case steps.CatchStep:
 		return &step
 	}
 	return nil
 }
 
-/*func (g *GoblTask) getFollowingResult(pos int) *ResultTaskStep {
+/*func (g *GoblTask) getFollowingsteps.Result(pos int) *steps.ResultStep {
 	if pos+1 >= len(g.steps) {
 		return nil
 	}
 	step := g.steps[pos+1]
 	switch step := step.(type) {
-	case ResultTaskStep:
+	case steps.ResultStep:
 		return &step
 	}
 	return nil
 }*/
 
-func (g *GoblTask) runLoop(resultChan chan Result) {
+func (g *GoblTask) runLoop(resultChan chan steps.Result) {
 	g.running = true
 	for {
 		select {
@@ -99,7 +101,7 @@ func (g *GoblTask) runLoop(resultChan chan Result) {
 				return
 			}
 		case err := <-g.stopChannel:
-			resultChan <- Result{nil, err, g}
+			resultChan <- steps.Result{Result: nil, Error: err, Context: &g.context}
 			g.running = false
 			return
 		}
@@ -124,7 +126,7 @@ func (g *GoblTask) watchLoop() {
 							for i := 0; i < len(g.steps); i++ {
 								step := g.steps[i]
 								switch step := step.(type) {
-								case RunTaskStep:
+								case steps.RunStep:
 									g2 := Tasks[step.TaskName]
 									if g2.running {
 										g2.killProcesses()
@@ -154,8 +156,8 @@ func (g *GoblTask) watchLoop() {
 	}
 }
 
-func (g *GoblTask) run() chan Result {
-	result := make(chan Result)
+func (g *GoblTask) run() chan steps.Result {
+	result := make(chan steps.Result)
 
 	go g.runLoop(result)
 
@@ -183,7 +185,7 @@ func (g *GoblTask) Watch(paths ...string) *GoblTask {
 
 // Catch catches the error of any preceding steps.
 func (g *GoblTask) Catch(f func(error) error) *GoblTask {
-	g.steps = append(g.steps, CatchTaskStep{
+	g.steps = append(g.steps, steps.CatchStep{
 		Func: f,
 	})
 	return g
@@ -191,7 +193,7 @@ func (g *GoblTask) Catch(f func(error) error) *GoblTask {
 
 // Result receives an interface to the result of the last step.
 func (g *GoblTask) Result(f func(interface{})) *GoblTask {
-	g.steps = append(g.steps, ResultTaskStep{
+	g.steps = append(g.steps, steps.ResultStep{
 		Func: f,
 	})
 	return g
@@ -199,7 +201,7 @@ func (g *GoblTask) Result(f func(interface{})) *GoblTask {
 
 // Run runs a task with the given name.
 func (g *GoblTask) Run(taskName string) *GoblTask {
-	g.steps = append(g.steps, RunTaskStep{
+	g.steps = append(g.steps, steps.RunStep{
 		TaskName: taskName,
 	})
 	return g
@@ -207,7 +209,7 @@ func (g *GoblTask) Run(taskName string) *GoblTask {
 
 // Exec executes a command.
 func (g *GoblTask) Exec(args ...string) *GoblTask {
-	g.steps = append(g.steps, ExecStep{
+	g.steps = append(g.steps, steps.ExecStep{
 		Args: args,
 	})
 	return g
@@ -215,7 +217,7 @@ func (g *GoblTask) Exec(args ...string) *GoblTask {
 
 // Env sets environment variables.
 func (g *GoblTask) Env(args ...string) *GoblTask {
-	g.steps = append(g.steps, EnvStep{
+	g.steps = append(g.steps, steps.EnvStep{
 		Args: args,
 	})
 	return g
@@ -223,7 +225,7 @@ func (g *GoblTask) Env(args ...string) *GoblTask {
 
 // Chdir changes the current directory.
 func (g *GoblTask) Chdir(path string) *GoblTask {
-	g.steps = append(g.steps, ChdirStep{
+	g.steps = append(g.steps, steps.ChdirStep{
 		Path: path,
 	})
 	return g
@@ -231,7 +233,7 @@ func (g *GoblTask) Chdir(path string) *GoblTask {
 
 // Exists checks if the given file or directory exists.
 func (g *GoblTask) Exists(path string) *GoblTask {
-	g.steps = append(g.steps, ExistsStep{
+	g.steps = append(g.steps, steps.ExistsStep{
 		Path: path,
 	})
 	return g
@@ -239,7 +241,7 @@ func (g *GoblTask) Exists(path string) *GoblTask {
 
 // Sleep delays time by the given string, adhering to https://pkg.go.dev/time#ParseDuration
 func (g *GoblTask) Sleep(duration string) *GoblTask {
-	g.steps = append(g.steps, SleepStep{
+	g.steps = append(g.steps, steps.SleepStep{
 		Duration: duration,
 	})
 	return g

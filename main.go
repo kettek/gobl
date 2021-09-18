@@ -5,59 +5,21 @@ import (
 	"os"
 	"time"
 
+	"github.com/kettek/gobl/pkg/globals"
 	"github.com/kettek/gobl/pkg/steps"
-	"github.com/radovskyb/watcher"
-)
-
-// Tasks is our global task name to *GoblTask map.
-var Tasks = make(map[string]*GoblTask)
-
-// Our name to color map.
-var (
-	InfoColor    = Purple
-	NoticeColor  = Teal
-	WarnColor    = Yellow
-	ErrorColor   = Red
-	SuccessColor = Green
-)
-
-// Our colors to escape codes map.
-var (
-	Black   = "\033[1;30m"
-	Red     = "\033[1;31m"
-	Green   = "\033[1;32m"
-	Yellow  = "\033[1;33m"
-	Purple  = "\033[1;34m"
-	Magenta = "\033[1;35m"
-	Teal    = "\033[1;36m"
-	White   = "\033[1;37m"
-	Clear   = "\033[0m"
-)
-
-// Our messages.
-var (
-	AvailableTasksMessage = "✨  Available Tasks"
-	MissingTaskMessage    = "🛑  task \"%s\" does not exist"
-	StartingTaskMessage   = "⚡  %sStarting Task%s \"%s\""
-	CompletedTaskMessage  = "✔️  %sTask \"%s\" Complete in %s%s"
-	FailedTaskMessage     = "❌  %sTask \"%s\" Failed%s: %s"
+	"github.com/kettek/gobl/pkg/task"
 )
 
 // Task is a container for various steps.
-func Task(name string) *GoblTask {
-	Tasks[name] = &GoblTask{
-		Name:        name,
-		stopChannel: make(chan error),
-		runChannel:  make(chan bool),
-		watcher:     watcher.New(),
-	}
-	return Tasks[name]
+func Task(name string) *task.Task {
+	task.Tasks[name] = task.NewTask(name, &Context{})
+	return task.Tasks[name]
 }
 
 // PrintTasks prints the currently available tasks.
 func PrintTasks() {
-	fmt.Printf("%s%s%s\n", InfoColor, AvailableTasksMessage, Clear)
-	for k := range Tasks {
+	fmt.Printf("%s%s%s\n", globals.InfoColor, globals.AvailableTasksMessage, globals.Clear)
+	for k := range task.Tasks {
 		fmt.Printf("\t%s\n", k)
 	}
 }
@@ -73,28 +35,28 @@ func Go() {
 
 // RunTask begins running a specifc named task.
 func RunTask(taskName string) (errChan chan steps.Result) {
-	g, ok := Tasks[taskName]
+	g, ok := task.Tasks[taskName]
 	errChan = make(chan steps.Result)
 	if !ok {
 		go func() {
-			fmt.Printf(MissingTaskMessage+"\n", taskName)
-			errChan <- steps.Result{Result: nil, Error: fmt.Errorf(MissingTaskMessage, taskName), Context: nil}
+			fmt.Printf(globals.MissingTaskMessage+"\n", taskName)
+			errChan <- steps.Result{Result: nil, Error: fmt.Errorf(globals.MissingTaskMessage, taskName), Context: nil}
 		}()
 	} else {
-		fmt.Printf(StartingTaskMessage+"\n", NoticeColor, Clear, g.Name)
+		fmt.Printf(globals.StartingTaskMessage+"\n", globals.NoticeColor, globals.Clear, g.Name)
 		t1 := time.Now()
 		go func() {
-			result := <-g.run()
+			result := <-g.Execute()
 			diff := time.Now().Sub(t1)
 
 			if result.Result != nil {
-				fmt.Printf("\t%s%v%s\n", InfoColor, result.Result, Clear)
+				fmt.Printf("\t%s%v%s\n", globals.InfoColor, result.Result, globals.Clear)
 			}
 
 			if result.Error != nil {
-				fmt.Printf(FailedTaskMessage+"\n", ErrorColor, g.Name, Clear, result.Error)
+				fmt.Printf(globals.FailedTaskMessage+"\n", globals.ErrorColor, g.Name, globals.Clear, result.Error)
 			} else {
-				fmt.Printf(CompletedTaskMessage+"\n", SuccessColor, g.Name, diff, Clear)
+				fmt.Printf(globals.CompletedTaskMessage+"\n", globals.SuccessColor, g.Name, diff, globals.Clear)
 			}
 			errChan <- result
 		}()

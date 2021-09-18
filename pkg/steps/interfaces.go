@@ -4,6 +4,7 @@ package steps
 type Context interface {
 	AddProcessKillChannel(chan Result)
 	RemoveProcessKillChannel(chan Result)
+	GetProcessKillChannels() []chan Result
 	GetEnv() []string
 	AddEnv(...string)
 	RunTask(string) chan Result

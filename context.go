@@ -27,6 +27,11 @@ func (c *Context) RemoveProcessKillChannel(r chan steps.Result) {
 	}
 }
 
+// GetProcessKillChannels returns the underlying process kill channels slice.
+func (c *Context) GetProcessKillChannels() []chan steps.Result {
+	return c.processKillChannels
+}
+
 // GetEnv returns the current environment variables, including OS.
 func (c *Context) GetEnv() []string {
 	return append(os.Environ(), c.env...)

@@ -191,7 +191,3 @@ func (s SleepStep) run(pr Result) chan Result {
 
 	return result
 }
-
-// CanKill does nothing.
-type CanKill struct {
-}

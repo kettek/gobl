@@ -9,15 +9,6 @@ import (
 	"github.com/radovskyb/watcher"
 )
 
-// Result represents the result of a step.
-type Result struct {
-	Result interface{}
-	Error  error
-	Task   *GoblTask // TODO: Move Task to some sort of GoblContext that gets passed into steps.
-}
-
-var goblTasks = make(map[string]*GoblTask)
-
 // GoblTask is a named container for steps.
 type GoblTask struct {
 	Name                string
@@ -134,7 +125,7 @@ func (g *GoblTask) watchLoop() {
 								step := g.steps[i]
 								switch step := step.(type) {
 								case RunTaskStep:
-									g2 := goblTasks[step.TaskName]
+									g2 := Tasks[step.TaskName]
 									if g2.running {
 										g2.killProcesses()
 									}

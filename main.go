@@ -8,6 +8,9 @@ import (
 	"github.com/radovskyb/watcher"
 )
 
+// Tasks is our global task name to *GoblTask map.
+var Tasks = make(map[string]*GoblTask)
+
 // Our name to color map.
 var (
 	InfoColor    = Purple
@@ -30,20 +33,28 @@ var (
 	Clear   = "\033[0m"
 )
 
+// Result represents the result of a step.
+type Result struct {
+	Result interface{}
+	Error  error
+	Task   *GoblTask // TODO: Move Task to some sort of GoblContext that gets passed into steps.
+}
+
 // Task is a container for various steps.
 func Task(name string) *GoblTask {
-	goblTasks[name] = &GoblTask{
+	Tasks[name] = &GoblTask{
 		Name:        name,
 		stopChannel: make(chan error),
 		runChannel:  make(chan bool),
 		watcher:     watcher.New(),
 	}
-	return goblTasks[name]
+	return Tasks[name]
 }
 
-func printInfo() {
+// PrintTasks prints the currently available tasks.
+func PrintTasks() {
 	fmt.Printf("%s%s%s\n", InfoColor, "✨  Available Tasks", Clear)
-	for k := range goblTasks {
+	for k := range Tasks {
 		fmt.Printf("\t%s\n", k)
 	}
 }
@@ -51,7 +62,7 @@ func printInfo() {
 // Go runs a specified task or lists all tasks if no task is specified.
 func Go() {
 	if len(os.Args) < 2 {
-		printInfo()
+		PrintTasks()
 		return
 	}
 	<-RunTask(os.Args[1])
@@ -59,7 +70,7 @@ func Go() {
 
 // RunTask begins running a specifc named task.
 func RunTask(taskName string) (errChan chan Result) {
-	g, ok := goblTasks[taskName]
+	g, ok := Tasks[taskName]
 	errChan = make(chan Result)
 	if !ok {
 		go func() {
@@ -68,7 +79,6 @@ func RunTask(taskName string) (errChan chan Result) {
 		}()
 	} else {
 		fmt.Printf("⚡  %sStarting Task%s \"%s\"\n", NoticeColor, Clear, g.Name)
-		//g.compile()
 		t1 := time.Now()
 		go func() {
 			result := <-g.run()

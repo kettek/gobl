@@ -9,8 +9,8 @@ import (
 	"github.com/radovskyb/watcher"
 )
 
-// GoblResult represents the result of a step.
-type GoblResult struct {
+// Result represents the result of a step.
+type Result struct {
 	Result interface{}
 	Error  error
 	Task   *GoblTask // TODO: Move Task to some sort of GoblContext that gets passed into steps.
@@ -25,13 +25,13 @@ type GoblTask struct {
 	env                 []string
 	watcher             *watcher.Watcher
 	watchPaths          []string
-	steps               []GoblStep
+	steps               []Step
 	runChannel          chan bool
 	stopChannel         chan error
-	processKillChannels []chan GoblResult
+	processKillChannels []chan Result
 }
 
-func (g *GoblTask) runSteps() GoblResult {
+func (g *GoblTask) runSteps() Result {
 	// Store working directory so we can restore on close.
 	wd, err := os.Getwd()
 	if err != nil {
@@ -43,7 +43,7 @@ func (g *GoblTask) runSteps() GoblResult {
 		}
 	}()
 
-	prevResult := GoblResult{Task: g}
+	prevResult := Result{Task: g}
 	for i := 0; i < len(g.steps); i++ {
 		step := g.steps[i]
 
@@ -68,35 +68,35 @@ func (g *GoblTask) runSteps() GoblResult {
 
 func (g *GoblTask) killProcesses() {
 	for _, ch := range g.processKillChannels {
-		ch <- GoblResult{}
+		ch <- Result{}
 	}
 }
 
-func (g *GoblTask) getFollowingCatch(pos int) *GoblCatchTaskStep {
+func (g *GoblTask) getFollowingCatch(pos int) *CatchTaskStep {
 	if pos+1 >= len(g.steps) {
 		return nil
 	}
 	step := g.steps[pos+1]
 	switch step := step.(type) {
-	case GoblCatchTaskStep:
+	case CatchTaskStep:
 		return &step
 	}
 	return nil
 }
 
-/*func (g *GoblTask) getFollowingResult(pos int) *GoblResultTaskStep {
+/*func (g *GoblTask) getFollowingResult(pos int) *ResultTaskStep {
 	if pos+1 >= len(g.steps) {
 		return nil
 	}
 	step := g.steps[pos+1]
 	switch step := step.(type) {
-	case GoblResultTaskStep:
+	case ResultTaskStep:
 		return &step
 	}
 	return nil
 }*/
 
-func (g *GoblTask) runLoop(resultChan chan GoblResult) {
+func (g *GoblTask) runLoop(resultChan chan Result) {
 	g.running = true
 	for {
 		select {
@@ -108,7 +108,7 @@ func (g *GoblTask) runLoop(resultChan chan GoblResult) {
 				return
 			}
 		case err := <-g.stopChannel:
-			resultChan <- GoblResult{nil, err, g}
+			resultChan <- Result{nil, err, g}
 			g.running = false
 			return
 		}
@@ -133,7 +133,7 @@ func (g *GoblTask) watchLoop() {
 							for i := 0; i < len(g.steps); i++ {
 								step := g.steps[i]
 								switch step := step.(type) {
-								case GoblRunTaskStep:
+								case RunTaskStep:
 									g2 := goblTasks[step.TaskName]
 									if g2.running {
 										g2.killProcesses()
@@ -163,8 +163,8 @@ func (g *GoblTask) watchLoop() {
 	}
 }
 
-func (g *GoblTask) run() chan GoblResult {
-	result := make(chan GoblResult)
+func (g *GoblTask) run() chan Result {
+	result := make(chan Result)
 
 	go g.runLoop(result)
 
@@ -192,7 +192,7 @@ func (g *GoblTask) Watch(paths ...string) *GoblTask {
 
 // Catch catches the error of any preceding steps.
 func (g *GoblTask) Catch(f func(error) error) *GoblTask {
-	g.steps = append(g.steps, GoblCatchTaskStep{
+	g.steps = append(g.steps, CatchTaskStep{
 		Func: f,
 	})
 	return g
@@ -200,7 +200,7 @@ func (g *GoblTask) Catch(f func(error) error) *GoblTask {
 
 // Result receives an interface to the result of the last step.
 func (g *GoblTask) Result(f func(interface{})) *GoblTask {
-	g.steps = append(g.steps, GoblResultTaskStep{
+	g.steps = append(g.steps, ResultTaskStep{
 		Func: f,
 	})
 	return g
@@ -208,7 +208,7 @@ func (g *GoblTask) Result(f func(interface{})) *GoblTask {
 
 // Run runs a task with the given name.
 func (g *GoblTask) Run(taskName string) *GoblTask {
-	g.steps = append(g.steps, GoblRunTaskStep{
+	g.steps = append(g.steps, RunTaskStep{
 		TaskName: taskName,
 	})
 	return g
@@ -216,7 +216,7 @@ func (g *GoblTask) Run(taskName string) *GoblTask {
 
 // Exec executes a command.
 func (g *GoblTask) Exec(args ...string) *GoblTask {
-	g.steps = append(g.steps, GoblExecStep{
+	g.steps = append(g.steps, ExecStep{
 		Args: args,
 	})
 	return g
@@ -224,7 +224,7 @@ func (g *GoblTask) Exec(args ...string) *GoblTask {
 
 // Env sets environment variables.
 func (g *GoblTask) Env(args ...string) *GoblTask {
-	g.steps = append(g.steps, GoblEnvStep{
+	g.steps = append(g.steps, EnvStep{
 		Args: args,
 	})
 	return g
@@ -232,7 +232,7 @@ func (g *GoblTask) Env(args ...string) *GoblTask {
 
 // Chdir changes the current directory.
 func (g *GoblTask) Chdir(path string) *GoblTask {
-	g.steps = append(g.steps, GoblChdirStep{
+	g.steps = append(g.steps, ChdirStep{
 		Path: path,
 	})
 	return g
@@ -240,7 +240,7 @@ func (g *GoblTask) Chdir(path string) *GoblTask {
 
 // Exists checks if the given file or directory exists.
 func (g *GoblTask) Exists(path string) *GoblTask {
-	g.steps = append(g.steps, GoblExistsStep{
+	g.steps = append(g.steps, ExistsStep{
 		Path: path,
 	})
 	return g
@@ -248,7 +248,7 @@ func (g *GoblTask) Exists(path string) *GoblTask {
 
 // Sleep delays time by the given string, adhering to https://pkg.go.dev/time#ParseDuration
 func (g *GoblTask) Sleep(duration string) *GoblTask {
-	g.steps = append(g.steps, GoblSleepStep{
+	g.steps = append(g.steps, SleepStep{
 		Duration: duration,
 	})
 	return g

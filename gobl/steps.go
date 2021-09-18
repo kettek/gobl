@@ -8,82 +8,82 @@ import (
 	"os/exec"
 )
 
-// GoblStep is the interface that all gobl steps adhere to.
-type GoblStep interface {
-	run(GoblResult) chan GoblResult
+// Step is the interface that all gobl steps adhere to.
+type Step interface {
+	run(Result) chan Result
 }
 
-// GoblWatchStep handles setting up watch conditions.
-type GoblWatchStep struct {
+// WatchStep handles setting up watch conditions.
+type WatchStep struct {
 	Paths []string
 }
 
-func (s GoblWatchStep) run(r GoblResult) chan GoblResult {
-	result := make(chan GoblResult)
-	result <- GoblResult{}
+func (s WatchStep) run(r Result) chan Result {
+	result := make(chan Result)
+	result <- Result{}
 	return result
 }
 
-// GoblRunTaskStep handles running a new step.
-type GoblRunTaskStep struct {
+// RunTaskStep handles running a new step.
+type RunTaskStep struct {
 	TaskName string
 }
 
-func (s GoblRunTaskStep) run(r GoblResult) chan GoblResult {
+func (s RunTaskStep) run(r Result) chan Result {
 	return RunTask(s.TaskName)
 }
 
-// GoblResultTaskStep handles the result of a previous step.
-type GoblResultTaskStep struct {
+// ResultTaskStep handles the result of a previous step.
+type ResultTaskStep struct {
 	Func func(interface{})
 }
 
-func (s GoblResultTaskStep) run(r GoblResult) chan GoblResult {
-	result := make(chan GoblResult)
+func (s ResultTaskStep) run(r Result) chan Result {
+	result := make(chan Result)
 	go func() {
 		s.Func(r.Result)
-		result <- GoblResult{nil, nil, nil}
+		result <- Result{nil, nil, nil}
 	}()
 	return result
 }
 
-// GoblCatchTaskStep handles catching errors from any preceding steps.
-type GoblCatchTaskStep struct {
+// CatchTaskStep handles catching errors from any preceding steps.
+type CatchTaskStep struct {
 	Func func(error) error
 }
 
-func (s GoblCatchTaskStep) run(r GoblResult) chan GoblResult {
-	result := make(chan GoblResult)
+func (s CatchTaskStep) run(r Result) chan Result {
+	result := make(chan Result)
 	go func() {
-		result <- GoblResult{nil, s.Func(fmt.Errorf("%v: %v", r.Error, r.Result)), nil}
+		result <- Result{nil, s.Func(fmt.Errorf("%v: %v", r.Error, r.Result)), nil}
 	}()
 	return result
 }
 
-// GoblEnvStep sets up environment variables to use.
-type GoblEnvStep struct {
+// EnvStep sets up environment variables to use.
+type EnvStep struct {
 	Args []string
 }
 
-func (s GoblEnvStep) run(pr GoblResult) chan GoblResult {
-	result := make(chan GoblResult)
+func (s EnvStep) run(pr Result) chan Result {
+	result := make(chan Result)
 	go func() {
 		pr.Task.env = append(pr.Task.env, s.Args...)
-		result <- GoblResult{}
+		result <- Result{}
 	}()
 	return result
 }
 
-// GoblExecStep handles executing a command.
-type GoblExecStep struct {
+// ExecStep handles executing a command.
+type ExecStep struct {
 	Args []string
 }
 
-func (s GoblExecStep) run(pr GoblResult) chan GoblResult {
-	result := make(chan GoblResult)
+func (s ExecStep) run(pr Result) chan Result {
+	result := make(chan Result)
 
-	killSignal := make(chan GoblResult)
-	doneSignal := make(chan GoblResult)
+	killSignal := make(chan Result)
+	doneSignal := make(chan Result)
 
 	pr.Task.processKillChannels = append(pr.Task.processKillChannels, killSignal)
 
@@ -98,10 +98,10 @@ func (s GoblExecStep) run(pr GoblResult) chan GoblResult {
 		select {
 		case <-killSignal:
 			if err := cmd.Process.Kill(); err != nil {
-				result <- GoblResult{nil, err, nil}
+				result <- Result{nil, err, nil}
 				return
 			}
-			result <- GoblResult{"killed", nil, nil}
+			result <- Result{"killed", nil, nil}
 		case r := <-doneSignal:
 			result <- r
 		}
@@ -116,82 +116,82 @@ func (s GoblExecStep) run(pr GoblResult) chan GoblResult {
 	// Start and wait for our command.
 	go func() {
 		if err := cmd.Start(); err != nil {
-			doneSignal <- GoblResult{nil, err, nil}
+			doneSignal <- Result{nil, err, nil}
 			return
 		}
 		if err := cmd.Wait(); err != nil {
-			doneSignal <- GoblResult{nil, err, nil}
+			doneSignal <- Result{nil, err, nil}
 			return
 		}
-		doneSignal <- GoblResult{nil, nil, nil}
+		doneSignal <- Result{nil, nil, nil}
 	}()
 	return result
 }
 
-// GoblChdirStep handles changing the current working directory.
-type GoblChdirStep struct {
+// ChdirStep handles changing the current working directory.
+type ChdirStep struct {
 	Path string
 }
 
-func (s GoblChdirStep) run(pr GoblResult) chan GoblResult {
-	result := make(chan GoblResult)
+func (s ChdirStep) run(pr Result) chan Result {
+	result := make(chan Result)
 
 	go func() {
 		if err := os.Chdir(s.Path); err != nil {
-			result <- GoblResult{nil, err, nil}
+			result <- Result{nil, err, nil}
 			return
 		}
 		wd, err := os.Getwd()
 		if err != nil {
-			result <- GoblResult{nil, nil, nil}
+			result <- Result{nil, nil, nil}
 		}
-		result <- GoblResult{wd, nil, nil}
+		result <- Result{wd, nil, nil}
 	}()
 
 	return result
 }
 
-// GoblExistsStep handles checking if a directory or file exists.
-type GoblExistsStep struct {
+// ExistsStep handles checking if a directory or file exists.
+type ExistsStep struct {
 	Path string
 }
 
-func (s GoblExistsStep) run(pr GoblResult) chan GoblResult {
-	result := make(chan GoblResult)
+func (s ExistsStep) run(pr Result) chan Result {
+	result := make(chan Result)
 
 	go func() {
 		info, err := os.Stat(s.Path)
 		if err != nil {
-			result <- GoblResult{nil, err, nil}
+			result <- Result{nil, err, nil}
 			return
 		}
-		result <- GoblResult{info, nil, nil}
+		result <- Result{info, nil, nil}
 	}()
 
 	return result
 }
 
-// GoblSleepStep causes a delay.
-type GoblSleepStep struct {
+// SleepStep causes a delay.
+type SleepStep struct {
 	Duration string
 }
 
-func (s GoblSleepStep) run(pr GoblResult) chan GoblResult {
-	result := make(chan GoblResult)
+func (s SleepStep) run(pr Result) chan Result {
+	result := make(chan Result)
 
 	go func() {
 		d, err := time.ParseDuration(s.Duration)
 		if err != nil {
-			result <- GoblResult{nil, err, nil}
+			result <- Result{nil, err, nil}
 			return
 		}
 		time.Sleep(d)
-		result <- GoblResult{s.Duration, nil, nil}
+		result <- Result{s.Duration, nil, nil}
 	}()
 
 	return result
 }
 
-// GoblCanKill does nothing.
-type GoblCanKill struct {
+// CanKill does nothing.
+type CanKill struct {
 }

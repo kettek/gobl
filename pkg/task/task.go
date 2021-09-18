@@ -6,7 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/kettek/gobl/pkg/globals"
+	"github.com/kettek/gobl/pkg/colors"
+	"github.com/kettek/gobl/pkg/messages"
 	"github.com/kettek/gobl/pkg/steps"
 
 	"github.com/radovskyb/watcher"
@@ -122,7 +123,7 @@ func (g *Task) runLoop(resultChan chan steps.Result) {
 
 func (g *Task) watchLoop() {
 	if len(g.watcher.WatchedFiles()) > 0 {
-		fmt.Printf("👀  %sWatching%s\n", globals.InfoColor, globals.Clear)
+		fmt.Printf(messages.WatchingTask+"\n", colors.Info, colors.Clear)
 		for k := range g.watcher.WatchedFiles() {
 			fmt.Printf("\t%s\n", k)
 		}

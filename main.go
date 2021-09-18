@@ -5,7 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/kettek/gobl/pkg/globals"
+	"github.com/kettek/gobl/pkg/colors"
+	"github.com/kettek/gobl/pkg/messages"
 	"github.com/kettek/gobl/pkg/steps"
 	"github.com/kettek/gobl/pkg/task"
 )
@@ -18,7 +19,7 @@ func Task(name string) *task.Task {
 
 // PrintTasks prints the currently available tasks.
 func PrintTasks() {
-	fmt.Printf("%s%s%s\n", globals.InfoColor, globals.AvailableTasksMessage, globals.Clear)
+	fmt.Printf("%s%s%s\n", colors.Info, messages.AvailableTasks, colors.Clear)
 	for k := range task.Tasks {
 		fmt.Printf("\t%s\n", k)
 	}
@@ -39,24 +40,24 @@ func RunTask(taskName string) (errChan chan steps.Result) {
 	errChan = make(chan steps.Result)
 	if !ok {
 		go func() {
-			fmt.Printf(globals.MissingTaskMessage+"\n", taskName)
-			errChan <- steps.Result{Result: nil, Error: fmt.Errorf(globals.MissingTaskMessage, taskName), Context: nil}
+			fmt.Printf(messages.MissingTask+"\n", taskName)
+			errChan <- steps.Result{Result: nil, Error: fmt.Errorf(messages.MissingTask, taskName), Context: nil}
 		}()
 	} else {
-		fmt.Printf(globals.StartingTaskMessage+"\n", globals.NoticeColor, globals.Clear, g.Name)
+		fmt.Printf(messages.StartingTask+"\n", colors.Notice, colors.Clear, g.Name)
 		t1 := time.Now()
 		go func() {
 			result := <-g.Execute()
 			diff := time.Now().Sub(t1)
 
 			if result.Result != nil {
-				fmt.Printf("\t%s%v%s\n", globals.InfoColor, result.Result, globals.Clear)
+				fmt.Printf("\t%s%v%s\n", colors.Info, result.Result, colors.Clear)
 			}
 
 			if result.Error != nil {
-				fmt.Printf(globals.FailedTaskMessage+"\n", globals.ErrorColor, g.Name, globals.Clear, result.Error)
+				fmt.Printf(messages.FailedTask+"\n", colors.Error, g.Name, colors.Clear, result.Error)
 			} else {
-				fmt.Printf(globals.CompletedTaskMessage+"\n", globals.SuccessColor, g.Name, diff, globals.Clear)
+				fmt.Printf(messages.CompletedTask+"\n", colors.Success, g.Name, diff, colors.Clear)
 			}
 			errChan <- result
 		}()

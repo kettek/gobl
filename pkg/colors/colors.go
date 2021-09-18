@@ -1,12 +1,12 @@
-package globals
+package colors
 
 // Our name to color map.
 var (
-	InfoColor    = Purple
-	NoticeColor  = Teal
-	WarnColor    = Yellow
-	ErrorColor   = Red
-	SuccessColor = Green
+	Info    = Purple
+	Notice  = Teal
+	Warn    = Yellow
+	Error   = Red
+	Success = Green
 )
 
 // Our colors to escape codes map.

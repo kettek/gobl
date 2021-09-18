@@ -3,6 +3,7 @@ package gobl
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"os/exec"
 )
@@ -165,6 +166,27 @@ func (s GoblExistsStep) run(pr GoblResult) chan GoblResult {
 			return
 		}
 		result <- GoblResult{info, nil, nil}
+	}()
+
+	return result
+}
+
+// GoblSleepStep causes a delay.
+type GoblSleepStep struct {
+	Duration string
+}
+
+func (s GoblSleepStep) run(pr GoblResult) chan GoblResult {
+	result := make(chan GoblResult)
+
+	go func() {
+		d, err := time.ParseDuration(s.Duration)
+		if err != nil {
+			result <- GoblResult{nil, err, nil}
+			return
+		}
+		time.Sleep(d)
+		result <- GoblResult{s.Duration, nil, nil}
 	}()
 
 	return result

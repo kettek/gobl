@@ -245,3 +245,11 @@ func (g *GoblTask) Exists(path string) *GoblTask {
 	})
 	return g
 }
+
+// Sleep delays time by the given string, adhering to https://pkg.go.dev/time#ParseDuration
+func (g *GoblTask) Sleep(duration string) *GoblTask {
+	g.steps = append(g.steps, GoblSleepStep{
+		Duration: duration,
+	})
+	return g
+}

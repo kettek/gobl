@@ -33,6 +33,15 @@ var (
 	Clear   = "\033[0m"
 )
 
+// Our messages.
+var (
+	AvailableTasksMessage = "✨  Available Tasks"
+	MissingTaskMessage    = "🛑  task \"%s\" does not exist"
+	StartingTaskMessage   = "⚡  %sStarting Task%s \"%s\""
+	CompletedTaskMessage  = "✔️  %sTask \"%s\" Complete in %s%s"
+	FailedTaskMessage     = "❌  %sTask \"%s\" Failed%s: %s"
+)
+
 // Result represents the result of a step.
 type Result struct {
 	Result interface{}
@@ -53,7 +62,7 @@ func Task(name string) *GoblTask {
 
 // PrintTasks prints the currently available tasks.
 func PrintTasks() {
-	fmt.Printf("%s%s%s\n", InfoColor, "✨  Available Tasks", Clear)
+	fmt.Printf("%s%s%s\n", InfoColor, AvailableTasksMessage, Clear)
 	for k := range Tasks {
 		fmt.Printf("\t%s\n", k)
 	}
@@ -74,11 +83,11 @@ func RunTask(taskName string) (errChan chan Result) {
 	errChan = make(chan Result)
 	if !ok {
 		go func() {
-			fmt.Printf("🛑  task \"%s\" does not exist", taskName)
-			errChan <- Result{nil, fmt.Errorf("🛑 task \"%s\" does not exist", taskName), nil}
+			fmt.Printf(MissingTaskMessage+"\n", taskName)
+			errChan <- Result{nil, fmt.Errorf(MissingTaskMessage, taskName), nil}
 		}()
 	} else {
-		fmt.Printf("⚡  %sStarting Task%s \"%s\"\n", NoticeColor, Clear, g.Name)
+		fmt.Printf(StartingTaskMessage+"\n", NoticeColor, Clear, g.Name)
 		t1 := time.Now()
 		go func() {
 			result := <-g.run()
@@ -89,9 +98,9 @@ func RunTask(taskName string) (errChan chan Result) {
 			}
 
 			if result.Error != nil {
-				fmt.Printf("❌  %sTask \"%s\" Failed%s: %s\n", ErrorColor, g.Name, Clear, result.Error)
+				fmt.Printf(FailedTaskMessage+"\n", ErrorColor, g.Name, Clear, result.Error)
 			} else {
-				fmt.Printf("✔️  %sTask \"%s\" Complete in %s%s\n", SuccessColor, g.Name, diff, Clear)
+				fmt.Printf(CompletedTaskMessage+"\n", SuccessColor, g.Name, diff, Clear)
 			}
 			errChan <- result
 		}()

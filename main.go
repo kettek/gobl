@@ -13,15 +13,15 @@ import (
 
 // Task is a container for various steps.
 func Task(name string) *task.Task {
-	task.Tasks[name] = task.NewTask(name, &Context{})
-	return task.Tasks[name]
+	task.AddTask(task.NewTask(name, &Context{}))
+	return task.GetTask(name)
 }
 
 // PrintTasks prints the currently available tasks.
 func PrintTasks() {
 	fmt.Printf("%s%s%s\n", colors.Info, messages.AvailableTasks, colors.Clear)
-	for k := range task.Tasks {
-		fmt.Printf("\t%s\n", k)
+	for _, k := range task.Tasks {
+		fmt.Printf("\t%s\n", k.Name)
 	}
 }
 
@@ -36,9 +36,9 @@ func Go() {
 
 // RunTask begins running a specifc named task.
 func RunTask(taskName string) (errChan chan steps.Result) {
-	g, ok := task.Tasks[taskName]
+	g := task.GetTask(taskName)
 	errChan = make(chan steps.Result)
-	if !ok {
+	if g == nil {
 		go func() {
 			fmt.Printf(messages.MissingTask+"\n", taskName)
 			errChan <- steps.Result{Result: nil, Error: fmt.Errorf(messages.MissingTask, taskName), Context: nil}

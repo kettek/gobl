@@ -140,8 +140,8 @@ func (g *Task) watchLoop() {
 								step := g.steps[i]
 								switch step := step.(type) {
 								case steps.RunStep:
-									g2 := Tasks[step.TaskName]
-									if g2.running {
+									g2 := GetTask(step.TaskName)
+									if g2 != nil && g2.running {
 										g2.killProcesses()
 									}
 								}

@@ -144,6 +144,13 @@ func (g *Task) watchLoop() {
 									if g2 != nil && g2.running {
 										g2.killProcesses()
 									}
+								case steps.ParallelStep:
+									for _, taskName := range step.TaskNames {
+										g2 := GetTask(taskName)
+										if g2 != nil && g2.running {
+											g2.killProcesses()
+										}
+									}
 								}
 							}
 							g.runChannel <- false
@@ -217,6 +224,14 @@ func (g *Task) Result(f func(interface{})) *Task {
 func (g *Task) Run(taskName string) *Task {
 	g.steps = append(g.steps, steps.RunStep{
 		TaskName: taskName,
+	})
+	return g
+}
+
+// Parallel runs tasks in parallel.
+func (g *Task) Parallel(taskNames ...string) *Task {
+	g.steps = append(g.steps, steps.ParallelStep{
+		TaskNames: taskNames,
 	})
 	return g
 }

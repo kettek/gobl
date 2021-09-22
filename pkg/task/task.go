@@ -43,6 +43,7 @@ func (g *Task) runSteps() steps.Result {
 	if err != nil {
 		fmt.Println("Couldn't get working directory", err)
 	}
+	g.context.SetWorkingDirectory(wd)
 	defer func() {
 		if err := os.Chdir(wd); err != nil {
 			fmt.Println("Couldn't restore working directory", err)

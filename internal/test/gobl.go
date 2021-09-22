@@ -30,6 +30,10 @@ func main() {
 		Exec("./bin/client.exe").
 		Chdir("../../gobl")
 
+	Task("run").
+		Chdir("../../internal").
+		Exec("git", "status")
+
 	Task("embeddedTest").
 		Exec("whoami").
 		Result(func(r interface{}) {
@@ -53,6 +57,9 @@ func main() {
 	Task("envTest").
 		Env("HUNGRY=true").
 		Exec("env")
+
+	Task("parallelTest").
+		Parallel("run", "embeddedTest", "chdirTest")
 
 	Go()
 }

@@ -2,14 +2,17 @@ package gobl
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/kettek/gobl/pkg/steps"
 )
 
 // Context provides a task-specific set of properties.
 type Context struct {
-	env                 []string
-	processKillChannels []chan steps.Result
+	env                      []string
+	processKillChannels      []chan steps.Result
+	workingDirectory         string
+	originalWorkingDirectory string
 }
 
 // AddProcessKillChannel adds a provided channel to be sent a killed signal.
@@ -45,4 +48,20 @@ func (c *Context) AddEnv(args ...string) {
 // RunTask runs a task.
 func (c *Context) RunTask(n string) chan steps.Result {
 	return RunTask(n)
+}
+
+// WorkingDirectory returns the context's working directory.
+func (c *Context) WorkingDirectory() string {
+	return c.workingDirectory
+}
+
+// SetWorkingDirectory sets the context's working directory, including settings its original working directory.
+func (c *Context) SetWorkingDirectory(wd string) {
+	c.workingDirectory, _ = filepath.Abs(wd)
+	c.originalWorkingDirectory = c.workingDirectory
+}
+
+// UpdateWorkingDirectory updates the context's working directory.
+func (c *Context) UpdateWorkingDirectory(wd string) {
+	c.workingDirectory = wd
 }

@@ -1,6 +1,9 @@
 package steps
 
-import "os"
+import (
+	"os"
+	"path/filepath"
+)
 
 // ExistsStep handles checking if a directory or file exists.
 type ExistsStep struct {
@@ -12,7 +15,7 @@ func (s ExistsStep) Run(pr Result) chan Result {
 	result := make(chan Result)
 
 	go func() {
-		info, err := os.Stat(s.Path)
+		info, err := os.Stat(filepath.Join(pr.Context.WorkingDirectory(), s.Path))
 		if err != nil {
 			result <- Result{nil, err, nil}
 			return

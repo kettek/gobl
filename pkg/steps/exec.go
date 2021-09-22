@@ -23,6 +23,7 @@ func (s ExecStep) Run(pr Result) chan Result {
 	cmd := exec.Command(s.Args[0], s.Args[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Dir = pr.Context.WorkingDirectory()
 	cmd.Env = pr.Context.GetEnv()
 
 	// Loop for either our doneSignal or our external kill signal

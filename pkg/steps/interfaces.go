@@ -8,6 +8,9 @@ type Context interface {
 	GetEnv() []string
 	AddEnv(...string)
 	RunTask(string) chan Result
+	WorkingDirectory() string
+	SetWorkingDirectory(string)
+	UpdateWorkingDirectory(string)
 }
 
 // Step is the interface that all gobl steps adhere to.

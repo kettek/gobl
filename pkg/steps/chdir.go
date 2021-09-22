@@ -1,6 +1,10 @@
 package steps
 
-import "os"
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+)
 
 // ChdirStep handles changing the current working directory.
 type ChdirStep struct {
@@ -12,14 +16,19 @@ func (s ChdirStep) Run(pr Result) chan Result {
 	result := make(chan Result)
 
 	go func() {
-		if err := os.Chdir(s.Path); err != nil {
+		wd := filepath.Join(pr.Context.WorkingDirectory(), s.Path)
+		info, err := os.Stat(wd)
+		if err != nil {
+			if os.IsNotExist(err) {
+				err = fmt.Errorf("%s does not exist", wd)
+			}
 			result <- Result{nil, err, nil}
 			return
+		} else if !info.IsDir() {
+			result <- Result{nil, fmt.Errorf("%s is not a directory", wd), nil}
+			return
 		}
-		wd, err := os.Getwd()
-		if err != nil {
-			result <- Result{nil, nil, nil}
-		}
+		pr.Context.UpdateWorkingDirectory(wd)
 		result <- Result{wd, nil, nil}
 	}()
 

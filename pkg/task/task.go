@@ -3,6 +3,7 @@ package task
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"time"
 
@@ -15,14 +16,15 @@ import (
 
 // Task is a named container for steps.
 type Task struct {
-	Name        string
-	running     bool
-	watcher     *watcher.Watcher
-	watchPaths  []string
-	steps       []steps.Step
-	runChannel  chan bool
-	stopChannel chan error
-	context     steps.Context
+	Name           string
+	running        bool
+	watcher        *watcher.Watcher
+	watchPaths     []string
+	steps          []steps.Step
+	runChannel     chan bool
+	stopChannel    chan error
+	signalChannels []chan bool
+	context        steps.Context
 }
 
 // NewTask returns a pointer to a Task with required properties initialized.
@@ -137,23 +139,7 @@ func (g *Task) watchLoop() {
 					// Yeah, I know this is racey.
 					if g.running {
 						if len(g.runChannel) == 0 {
-							for i := 0; i < len(g.steps); i++ {
-								step := g.steps[i]
-								switch step := step.(type) {
-								case steps.RunStep:
-									g2 := GetTask(step.TaskName)
-									if g2 != nil && g2.running {
-										g2.killProcesses()
-									}
-								case steps.ParallelStep:
-									for _, taskName := range step.TaskNames {
-										g2 := GetTask(taskName)
-										if g2 != nil && g2.running {
-											g2.killProcesses()
-										}
-									}
-								}
-							}
+							g.kill()
 							g.runChannel <- false
 						}
 					}
@@ -174,6 +160,26 @@ func (g *Task) watchLoop() {
 		}()
 	} else {
 		g.runChannel <- true
+	}
+}
+
+func (g *Task) kill() {
+	for i := 0; i < len(g.steps); i++ {
+		step := g.steps[i]
+		switch step := step.(type) {
+		case steps.RunStep:
+			g2 := GetTask(step.TaskName)
+			if g2 != nil && g2.running {
+				g2.killProcesses()
+			}
+		case steps.ParallelStep:
+			for _, taskName := range step.TaskNames {
+				g2 := GetTask(taskName)
+				if g2 != nil && g2.running {
+					g2.killProcesses()
+				}
+			}
+		}
 	}
 }
 
@@ -202,6 +208,30 @@ func (g *Task) Watch(paths ...string) *Task {
 			}
 		}
 	}
+	return g
+}
+
+// Signaler redirects a given signal to kill steps in the task.
+func (g *Task) Signaler(t ...os.Signal) *Task {
+	ch := make(chan bool)
+	g.signalChannels = append(g.signalChannels, ch)
+	sigChan := make(chan os.Signal, 1)
+	go func() {
+		signal.Notify(sigChan, t...)
+		run := true
+		for run {
+			select {
+			case <-ch:
+				signal.Reset(t...)
+				run = false
+				fmt.Println("RESET")
+			case <-sigChan:
+				g.kill()
+				fmt.Println("KILL")
+				g.runChannel <- false
+			}
+		}
+	}()
 	return g
 }
 

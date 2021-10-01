@@ -3,12 +3,20 @@ package gobl
 import (
 	"fmt"
 	"os"
+	"syscall"
 	"time"
 
 	"github.com/kettek/gobl/pkg/colors"
 	"github.com/kettek/gobl/pkg/messages"
 	"github.com/kettek/gobl/pkg/steps"
 	"github.com/kettek/gobl/pkg/task"
+)
+
+// Our various Signals
+const (
+	SigQuit      = syscall.SIGQUIT
+	SigInterrupt = syscall.SIGINT
+	SigStop      = syscall.SIGSTOP
 )
 
 // Task is a container for various steps.

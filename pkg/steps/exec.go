@@ -1,6 +1,8 @@
 package steps
 
 import (
+	"bytes"
+	"io"
 	"os"
 	"os/exec"
 )
@@ -19,9 +21,13 @@ func (s ExecStep) Run(pr Result) chan Result {
 
 	pr.Context.AddProcessKillChannel(killSignal)
 
+	// Set up buffer for capturing output.
+	var buffer bytes.Buffer
+	mw := io.MultiWriter(os.Stdout, &buffer)
+
 	// Create and set up our command before spawning goroutines
 	cmd := exec.Command(s.Args[0], s.Args[1:]...)
-	cmd.Stdout = os.Stdout
+	cmd.Stdout = mw
 	cmd.Stderr = os.Stderr
 	cmd.Dir = pr.Context.WorkingDirectory()
 	cmd.Env = pr.Context.GetEnv()
@@ -50,7 +56,7 @@ func (s ExecStep) Run(pr Result) chan Result {
 			doneSignal <- Result{nil, err, nil}
 			return
 		}
-		doneSignal <- Result{nil, nil, nil}
+		doneSignal <- Result{buffer.String(), nil, nil}
 	}()
 	return result
 }

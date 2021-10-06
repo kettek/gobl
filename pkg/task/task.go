@@ -268,7 +268,7 @@ func (g *Task) Parallel(taskNames ...string) *Task {
 }
 
 // Exec executes a command.
-func (g *Task) Exec(args ...string) *Task {
+func (g *Task) Exec(args ...interface{}) *Task {
 	g.steps = append(g.steps, steps.ExecStep{
 		Args: args,
 	})

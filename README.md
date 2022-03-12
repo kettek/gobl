@@ -1,7 +1,7 @@
 # gobl - Go Build
 [![Go Reference](https://pkg.go.dev/badge/github.com/kettek/gobl.svg)](https://pkg.go.dev/github.com/kettek/gobl)
 
-gobl is an experimental build system that uses go to define and run build tasks. Although it is actively used to develop other programs, it is by no means stable and may have breaking API changes if any redesigns are required. However, syntax _should_ largely remain the same, as I find its current syntax to be simple to use, which is one of the primary goals of it.
+`gobl` is an experimental build system that uses Go to define and run build tasks. Although it is actively used to develop other programs, it is by no means stable and may have breaking API changes if any redesigns are required. However, syntax _should_ largely remain the same, as I find its current syntax to be simple to use, which is one of the primary goals of it.
 
 ## Quickstart
 In your project root directory, simply create a file called `gobl.go` and fill its contents with the following:
@@ -65,6 +65,8 @@ There is a task provider extension for VSCode that allows using gobl tasks as VS
 	* 4. It's an interesting concept.
 
 Of course, there are some inconveniences, such as:
+
 	* 1. Technically running `go run .` does first compile the task script and run it from a temporary directory.
-	* 2. `go.mod` and `go.sum` adds some clutter.
+	* 2. It takes the place of `main() {...}` in whatever directory it is in. This shouldn't be problem for most popular go project layout styles, but could be an issue for some.
+	* 3. `go.mod` and `go.sum` adds some clutter.
 

@@ -24,6 +24,8 @@ func main() {
 
 You will likely have to get the gobl dependency by issuing `go get -d github.com/kettek/gobl`.
 
+At this point, you can list the tasks by issuing `go run .` and then run the specific task with `go run . listFiles`
+
 A more complex example that would allow automatic rebuilding + running, would be:
 
 ```go
@@ -55,3 +57,14 @@ For a complete rundown of available steps, see the [godoc task reference](https:
 
 ## Visual Studio Code Integration
 There is a task provider extension for VSCode that allows using gobl tasks as VSCode tasks. It is available as [Gobl Task Provider](https://marketplace.visualstudio.com/items?itemName=kettek.gobl-task-provider) and has a GitHub repository [here](https://github.com/kettek/vscode-gobl-task-provider).
+
+## Why
+	* 1. I like Go.
+	* 2. Having the full power of Go available for setting up and running build tasks is very convenient.
+	* 3. Go's syntax is elegant.
+	* 4. It's an interesting concept.
+
+Of course, there are some inconveniences, such as:
+	* 1. Technically running `go run .` does first compile the task script and run it from a temporary directory.
+	* 2. `go.mod` and `go.sum` adds some clutter.
+

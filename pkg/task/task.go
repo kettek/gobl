@@ -306,3 +306,11 @@ func (g *Task) Sleep(duration string) *Task {
 	})
 	return g
 }
+
+// Print prints either the args passed or the previous task's result.
+func (g *Task) Print(args ...interface{}) *Task {
+	g.steps = append(g.steps, steps.PrintStep{
+		Args: args,
+	})
+	return g
+}

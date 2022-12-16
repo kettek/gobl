@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"reflect"
 	"time"
 
 	"github.com/kettek/gobl/pkg/colors"
@@ -52,8 +53,17 @@ func (g *Task) runSteps() steps.Result {
 		}
 	}()
 
+	// Variables for Prompt functionality.
+	skipToIndex := -1
+	queryHandled := false
+
 	prevResult := steps.Result{Result: nil, Error: nil, Context: g.context}
 	for i := 0; i < len(g.steps); i++ {
+		// skipToIndex is used for "jumping"
+		if skipToIndex != -1 {
+			i = skipToIndex
+			skipToIndex = -1
+		}
 		step := g.steps[i]
 
 		result := <-step.Run(prevResult)
@@ -69,6 +79,42 @@ func (g *Task) runSteps() steps.Result {
 		}
 		if catchStep != nil {
 			i++
+		} else {
+			// Seems safe enough of a spot to put prompt/yes/no handling.
+			switch step.(type) {
+			case steps.PromptStep:
+				queryHandled = false
+				yes, nextYesIndex := g.getNextStep(i, steps.YesStep{})
+				no, nextNoIndex := g.getNextStep(i, steps.NoStep{})
+				_, nextPromptEndIndex := g.getNextStep(i, steps.EndStep{})
+				if result.Result == true {
+					if yes == nil {
+						skipToIndex = nextPromptEndIndex
+					} else {
+						skipToIndex = nextYesIndex
+					}
+				} else {
+					if no == nil {
+						skipToIndex = nextPromptEndIndex
+					} else {
+						skipToIndex = nextNoIndex
+					}
+				}
+			case steps.YesStep:
+				if queryHandled {
+					_, nextPromptEndIndex := g.getNextStep(i, steps.EndStep{})
+					skipToIndex = nextPromptEndIndex
+				}
+				queryHandled = true
+			case steps.NoStep:
+				if queryHandled {
+					_, nextPromptEndIndex := g.getNextStep(i, steps.EndStep{})
+					skipToIndex = nextPromptEndIndex
+				}
+				queryHandled = true
+			case steps.EndStep:
+				queryHandled = false
+			}
 		}
 		prevResult = result
 	}
@@ -93,17 +139,18 @@ func (g *Task) getFollowingCatch(pos int) steps.Step {
 	return nil
 }
 
-/*func (g *Task) getFollowingsteps.Result(pos int) *steps.ResultStep {
-	if pos+1 >= len(g.steps) {
-		return nil
+func (g *Task) getNextStep(pos int, target steps.Step) (steps.Step, int) {
+	for i := pos + 1; i < len(g.steps); i++ {
+		if i >= len(g.steps) {
+			return nil, i - 1
+		}
+		step := g.steps[i]
+		if reflect.TypeOf(target) == reflect.TypeOf(step) {
+			return step, i
+		}
 	}
-	step := g.steps[pos+1]
-	switch step := step.(type) {
-	case steps.ResultStep:
-		return &step
-	}
-	return nil
-}*/
+	return nil, pos + 1
+}
 
 func (g *Task) runLoop(resultChan chan steps.Result) {
 	g.running = true
@@ -312,5 +359,31 @@ func (g *Task) Print(args ...interface{}) *Task {
 	g.steps = append(g.steps, steps.PrintStep{
 		Args: args,
 	})
+	return g
+}
+
+// Prompt prompts (Y/N) using the passed value or the result of the previous task.
+func (g *Task) Prompt(v string) *Task {
+	g.steps = append(g.steps, steps.PromptStep{
+		Message: v,
+	})
+	return g
+}
+
+// End signifies the end of a prompt.
+func (g *Task) End() *Task {
+	g.steps = append(g.steps, steps.EndStep{})
+	return g
+}
+
+// Yes signifies the start of steps for a yes prompt result.
+func (g *Task) Yes() *Task {
+	g.steps = append(g.steps, steps.YesStep{})
+	return g
+}
+
+// No signifies the start of steps for a no prompt result.
+func (g *Task) No() *Task {
+	g.steps = append(g.steps, steps.NoStep{})
 	return g
 }

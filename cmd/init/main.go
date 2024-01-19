@@ -128,7 +128,7 @@ func main() {
 	}
 
 	// Install gobl
-	c := exec.Command("go", "get", "-d", "github.com/kettek/gobl/cmd/gobl")
+	c := exec.Command("go", "get", "github.com/kettek/gobl")
 	c.Dir = dir
 	if err := c.Run(); err != nil {
 		panic(err)

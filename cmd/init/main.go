@@ -110,13 +110,13 @@ func main() {
 	}
 
 	// Create cmd directory.
-	if err := os.MkdirAll(filepath.Join(dir, cmdPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, filepath.Join(cmdPath, cmd)), 0755); err != nil {
 		panic(err)
 	}
 	// Check if cmd file exists and if not, create it.
-	if _, err := os.Stat(filepath.Join(dir, cmdPath, cmd+".go")); err == nil {
-		fmt.Printf(" - %s already exists, not creating\n", filepath.Join(dir, cmdPath, cmd+".go"))
-	} else if err := os.WriteFile(filepath.Join(dir, cmdPath, cmd+".go"), []byte("package main\n\nfunc main() {\n\t// TODO: Implement\n}\n"), 0644); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, cmdPath, cmd, "main.go")); err == nil {
+		fmt.Printf(" - %s already exists, not creating\n", filepath.Join(dir, cmdPath, cmd, "main.go"))
+	} else if err := os.WriteFile(filepath.Join(dir, cmdPath, cmd, "main.go"), []byte("package main\n\nfunc main() {\n\t// TODO: Implement\n}\n"), 0644); err != nil {
 		panic(err)
 	}
 

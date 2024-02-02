@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
+	"path"
 	"strings"
 )
 
@@ -42,8 +42,8 @@ func main() {
 		os.Exit(1)
 	}
 	dir = os.Args[1]
-	cmdPath = filepath.Dir(os.Args[2])
-	cmd = filepath.Base(os.Args[2])
+	cmdPath = path.Dir(os.Args[2])
+	cmd = path.Base(os.Args[2])
 	if len(os.Args) > 3 {
 		watchdirs = os.Args[3:]
 	}
@@ -55,12 +55,12 @@ func main() {
 		panic(err)
 	}
 
-	if _, err := os.Stat(filepath.Join(dir, "go.mod")); err != nil {
+	if _, err := os.Stat(path.Join(dir, "go.mod")); err != nil {
 		if !os.IsNotExist(err) {
 			panic(err)
 		} else {
-			fmt.Printf(" - no go.mod found, initializing with \"%s\"\n", filepath.Base(dir))
-			c := exec.Command("go", "mod", "init", filepath.Base(dir))
+			fmt.Printf(" - no go.mod found, initializing with \"%s\"\n", path.Base(dir))
+			c := exec.Command("go", "mod", "init", path.Base(dir))
 			c.Dir = dir
 			if err := c.Run(); err != nil {
 				panic(err)
@@ -76,7 +76,7 @@ func main() {
 		panic(err)
 	}
 	for _, d := range files {
-		path := filepath.Join(dir, d.Name())
+		path := path.Join(dir, d.Name())
 		if strings.HasSuffix(path, ".go") {
 			b, err := os.ReadFile(path)
 			if err != nil {
@@ -92,37 +92,37 @@ func main() {
 		}
 	}
 
-	if _, err := os.Stat(filepath.Join(dir, "gobl.go")); err == nil {
+	if _, err := os.Stat(path.Join(dir, "gobl.go")); err == nil {
 		fmt.Println(" ! gobl.go already exists, bailing")
 		os.Exit(1)
 	}
 
 	var realdirs []string
 
-	realdirs = append(realdirs, fmt.Sprintf("\"%s/*\"", filepath.Join(cmdPath, cmd)))
+	realdirs = append(realdirs, fmt.Sprintf("\"%s/*\"", path.Join(cmdPath, cmd)))
 
 	for _, d := range watchdirs {
 		realdirs = append(realdirs, fmt.Sprintf("\"%s/*\"", d))
 	}
 
-	if err := os.WriteFile(filepath.Join(dir, "gobl.go"), []byte(fmt.Sprintf(template, funcSig, cmd, filepath.Join(cmdPath, cmd), strings.Join(realdirs, ", "))), 0644); err != nil {
+	if err := os.WriteFile(path.Join(dir, "gobl.go"), []byte(fmt.Sprintf(template, funcSig, cmd, path.Join(cmdPath, cmd), strings.Join(realdirs, ", "))), 0644); err != nil {
 		panic(err)
 	}
 
 	// Create cmd directory.
-	if err := os.MkdirAll(filepath.Join(dir, filepath.Join(cmdPath, cmd)), 0755); err != nil {
+	if err := os.MkdirAll(path.Join(dir, path.Join(cmdPath, cmd)), 0755); err != nil {
 		panic(err)
 	}
 	// Check if cmd file exists and if not, create it.
-	if _, err := os.Stat(filepath.Join(dir, cmdPath, cmd, "main.go")); err == nil {
-		fmt.Printf(" - %s already exists, not creating\n", filepath.Join(dir, cmdPath, cmd, "main.go"))
-	} else if err := os.WriteFile(filepath.Join(dir, cmdPath, cmd, "main.go"), []byte("package main\n\nfunc main() {\n\t// TODO: Implement\n}\n"), 0644); err != nil {
+	if _, err := os.Stat(path.Join(dir, cmdPath, cmd, "main.go")); err == nil {
+		fmt.Printf(" - %s already exists, not creating\n", path.Join(dir, cmdPath, cmd, "main.go"))
+	} else if err := os.WriteFile(path.Join(dir, cmdPath, cmd, "main.go"), []byte("package main\n\nfunc main() {\n\t// TODO: Implement\n}\n"), 0644); err != nil {
 		panic(err)
 	}
 
 	// Create stub watchdirs.
 	for _, d := range watchdirs {
-		if err := os.MkdirAll(filepath.Join(dir, d), 0755); err != nil {
+		if err := os.MkdirAll(path.Join(dir, d), 0755); err != nil {
 			panic(err)
 		}
 	}

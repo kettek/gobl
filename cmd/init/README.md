@@ -12,5 +12,5 @@ init myproject cmd/mycmd assets/ templates/
 ```
 
 ```shell
-go run github.com/kettek/gobl/cmd/init myproject cmd/mycmd assets/ templates/
+go run github.com/kettek/gobl/cmd/init@v0.3.0 myproject cmd/mycmd assets/ templates/
 ```

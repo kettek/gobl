@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/kettek/gobl/pkg/colors"
@@ -243,19 +244,65 @@ func (g *Task) Execute() chan steps.Result {
 // Watch sets up a variadic number of glob paths to watch.
 func (g *Task) Watch(paths ...string) *Task {
 	for _, path := range paths {
-		matches, err := filepath.Glob(path)
-		if err != nil {
-			fmt.Println(err)
-		}
-		g.watchPaths = append(g.watchPaths, matches...)
-
-		for _, file := range g.watchPaths {
-			if err := g.watcher.Add(file); err != nil {
+		if strings.Contains(path, "**") {
+			matches, err := doubleGlob(path)
+			if err != nil {
 				fmt.Println(err)
 			}
+			g.watchPaths = append(g.watchPaths, matches...)
+		} else {
+			matches, err := filepath.Glob(path)
+			if err != nil {
+				fmt.Println(err)
+			}
+			g.watchPaths = append(g.watchPaths, matches...)
+		}
+	}
+	for _, file := range g.watchPaths {
+		if err := g.watcher.Add(file); err != nil {
+			fmt.Println(err)
 		}
 	}
 	return g
+}
+
+func doubleGlob(p string) ([]string, error) {
+	globs := strings.Split(p, "**")
+	if len(globs) == 0 {
+		return nil, fmt.Errorf("invalid glob")
+	}
+	if globs[0] == "" {
+		globs[0] = "./"
+	}
+	matches := make([]string, 1)
+	for _, glob := range globs {
+		var hits []string
+		var hitMap = map[string]bool{}
+		for _, match := range matches {
+			npath := match + glob
+			paths, err := filepath.Glob(npath)
+			if err != nil {
+				return nil, err
+			}
+			for _, path := range paths {
+				if err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+					if err != nil {
+						return err
+					}
+					if _, ok := hitMap[path]; !ok {
+						hits = append(hits, path)
+						hitMap[path] = true
+					}
+					return nil
+				}); err != nil {
+					return nil, err
+				}
+			}
+		}
+		matches = hits
+	}
+
+	return matches, nil
 }
 
 // Signaler redirects a given signal to kill steps in the task.

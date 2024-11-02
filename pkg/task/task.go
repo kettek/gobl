@@ -241,7 +241,7 @@ func (g *Task) Execute() chan steps.Result {
 	return result
 }
 
-// Watch sets up a variadic number of glob paths to watch.
+// Watch sets up a variadic number of glob paths to watch. It supports double-star "**" globbing.
 func (g *Task) Watch(paths ...string) *Task {
 	for _, path := range paths {
 		if strings.Contains(path, "**") {
